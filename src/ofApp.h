@@ -2,7 +2,15 @@
 
 #include "ofMain.h"
 
-class ofApp : public ofBaseApp {
+#include "ofxMidi.h"
+#include "Plate.h"
+
+#include "PianoKeys.h"
+
+#include "ofxGui.h"
+
+
+class ofApp : public ofBaseApp, public ofxMidiListener {
 public:
     void setup();
     void update();
@@ -17,4 +25,47 @@ public:
     void windowResized(int w, int h);
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
+    
+    ofEasyCam cam;
+    
+    
+public:
+    ofxMidiIn midiIn;
+    void newMidiMessage(ofxMidiMessage& msg);
+    
+    
+    PlateManager pm;
+    
+//    ofxPanel panel;
+//    ofxButton button;
+//    ofxGuiGroup group;
+//    ofParameter<float> xx;
+//    ofxLabel label;
+    ofxToggle toggle;
+    
+    //vector<int> pitches;
+    set<int> pitches;
+    
+    PianoKeys pianoKeys;
+
+    render_t currentRenderType;
+    
+    void resetView();
+    
+protected:
+    ofxPanel panel;
+    ofxGuiGroup midiNotesGroup;
+    vector< shared_ptr<ofxToggle> > midiNotes;
+    Plate *currentPlate;
+    void createPanel(Plate *plate, bool setPos=true);
+    bool showPanel;
+
+    void valChange(bool &b);
+    bool needsToRedrawPanel;
+    
+protected:
+    bool connectMode, connecting;
+    ofVec3f connectStart, connectEnd;
+    Plate *connectedPlate;
+    
 };
