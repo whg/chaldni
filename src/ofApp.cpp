@@ -1,6 +1,8 @@
 #include "ofApp.h"
 #include "ofxTools.h"
 
+#include "Constants.h"
+
 bool PlateManager::drawSpecial;
 bool working = false;
 
@@ -26,7 +28,11 @@ void ofApp::setup() {
 
     pianoKeys = PianoKeys(2, 7);
     
-    pm.setup(5, 5);
+    plateManager = new PlateManager();
+    plateManager->setup(5, 5);
+    plateManager->setup(6, 2);
+    
+    pm = plateManager;
     
     cam.setTranslationKey('t');
     cam.setFarClip(20000);
@@ -47,8 +53,8 @@ void ofApp::setup() {
 //    toggle.setup(ofParameter<bool>("tog", true));
 //    toggle.addListener(this, &ofApp::valChange);
 //
-    panel.add(&toggle);
-    panel.setPosition(200, 200);
+//    panel.add(&toggle);
+//    panel.setPosition(200, 200);
     
     currentRenderType = NORMAL;
     currentPlate = NULL;
@@ -58,6 +64,14 @@ void ofApp::setup() {
     connectMode = false;
     connecting = false;
     connectedPlate = NULL;
+    
+    noteToFigureManager = new PlateManagerMidi();
+    noteToFigureManager->setup(FIGURE_GRID_X, FIGURE_GRID_Y);
+}
+
+void ofApp::exit() {
+    delete noteToFigureManager;
+    delete plateManager;
 }
 
 void ofApp::resetView() {
@@ -75,19 +89,22 @@ void ofApp::update() {
 
 void ofApp::draw() {
 
-    pianoKeys.draw();
+    if (currentRenderType == MIDI_MANAGER) {
+        ofBackground(100, 75, 150);
+    }
+    else ofBackground(0);
 
     cam.begin();
     
 //    cout << cam.getLookAtDir() << endl;
-    pm.draw(currentRenderType);
+    pm->draw(currentRenderType);
     
     cam.end();
     
     ofSetColor(255);
     if (showPanel) {
         if (needsToRedrawPanel && currentPlate) {
-            createPanel(currentPlate, false);
+            createPanel(currentPlate, false, currentRenderType == MIDI_MANAGER);
             cout << "redraw" << endl;
             needsToRedrawPanel = false;
         }
@@ -102,6 +119,17 @@ void ofApp::draw() {
         ofPopStyle();
     }
     
+    if (currentRenderType == NOTE_SELECT) {
+        pm->savePanel.draw();
+    }
+    else {
+        pianoKeys.draw();
+    }
+    
+    
+    
+    ofSetColor(255);
+    ofDrawBitmapString(ofToString(currentRenderType), 10, ofGetHeight()- 10);
 //    panel.draw();
 
 //    ofTranslate(mouseX, mouseY);
@@ -113,19 +141,33 @@ void ofApp::keyPressed(int key) {
 
     KEY('r', currentRenderType = NORMAL)
     KEY('e', currentRenderType = NOTE_SELECT)
+    KEY('m', currentRenderType = MIDI_MANAGER)
+    
+
     
     KEY('v', resetView())
     
     KEY('q', showPanel = false)
     
     KEY(OF_KEY_CONTROL, connectMode = true)
-    KEY('s', PlateManager::drawSpecial = true)
+    KEY('`', PlateManager::drawSpecial = true)
+
+
+
+    if (currentRenderType == MIDI_MANAGER) {
+        pm = noteToFigureManager;
+    }
+    else pm = plateManager;
+    
+    // this seems to make sense...
+    pianoKeys.highlightKeys(false);
+    
 }
 
 
 void ofApp::keyReleased(int key) {
     KEY(OF_KEY_CONTROL, connectMode = false)
-    KEY('s', PlateManager::drawSpecial = false)
+    KEY('`', PlateManager::drawSpecial = false)
 }
 
 
@@ -135,7 +177,7 @@ void ofApp::mouseMoved(int x, int y) {
 
 
 void ofApp::mouseDragged(int x, int y, int button) {
-    Plate *plate = pm.getPlateAt(cam, x, y);
+    Plate *plate = pm->getPlateAt(cam, x, y);
     
     
     if (plate && connecting) {
@@ -163,18 +205,19 @@ void ofApp::mousePressed(int x, int y, int button) {
     cout << "starting\n";
     
     float t = ofGetElapsedTimef();
-    Plate* plate = pm.getPlateAt(cam, x, y);
+    Plate* plate = pm->getPlateAt(cam, x, y);
     
     if (currentRenderType == NOTE_SELECT) {
-        if (plate && !pm.listeningForNote) {
-            pm.listeningForNote = true;
-            pm.currentPlate = plate;
+        if (plate && !pm->listeningForNote) {
+            pm->listeningForNote = true;
+            pm->currentPlate = plate;
             plate->listeningForNote = true;
         }
     }
-    else if (currentRenderType == NORMAL) {
+    else if (currentRenderType == NORMAL || currentRenderType == MIDI_MANAGER) {
         if (plate) {
-            createPanel(plate);
+            createPanel(plate, true, currentRenderType == MIDI_MANAGER);
+            
         }
         
     }
@@ -204,7 +247,7 @@ void ofApp::mouseReleased(int x, int y, int button) {
             connectedPlate->connecting = false;
             
             if (connectedPlate == currentPlate && showPanel) {
-                createPanel(connectedPlate, false);
+                createPanel(connectedPlate, false, currentRenderType == MIDI_MANAGER);
             }
 
         }
@@ -216,7 +259,7 @@ void ofApp::mouseReleased(int x, int y, int button) {
 }
 
 
-void ofApp::createPanel(Plate *plate, bool setPos) {
+void ofApp::createPanel(Plate *plate, bool setPos, bool forPattern) {
     
     if (currentPlate) {
         for(auto &e : currentPlate->midiNotes) {
@@ -224,13 +267,22 @@ void ofApp::createPanel(Plate *plate, bool setPos) {
         }
     }
     
-    panel.setName("Plate " + ofToString(plate->id));
     panel.clear();
-    panel.add(plate->audioChannel);
+
+    
+    if (!forPattern) {
+        panel.setName("Plate " + ofToString(plate->id));
+        panel.add(plate->audioChannel);
+        panel.add(plate->randomFigure);
+    }
+    else {
+        panel.setName("Pattern " + ofToString(plate->patternNum));
+    }
     panel.add(plate->volume);
     
 
     midiNotes.clear();
+    vector<int> toErase;
     for (auto &e : plate->midiNotes) {
         int pitch = e.first;
         ofParameter<bool> *param = e.second.get();
@@ -239,7 +291,15 @@ void ofApp::createPanel(Plate *plate, bool setPos) {
             param->addListener(this, &ofApp::valChange);
             cout << "name = " << e.second->getName() << endl;
         }
+        else {
+            toErase.push_back(pitch);
+        }
         
+    }
+    
+    for (int pitch : toErase) {
+        cout << "erasing " << pitch << endl;
+        plate->midiNotes.erase(pitch);
     }
     
     midiNotesGroup.clear();
@@ -253,6 +313,10 @@ void ofApp::createPanel(Plate *plate, bool setPos) {
     if (setPos) {
         panel.setPosition(ofPoint(mouseX, mouseY));
     }
+
+    // does this belong here?
+    pianoKeys.highlightKeysForPlate(plate);
+
     
     currentPlate = plate;
     showPanel = true;
@@ -295,4 +359,15 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
     }
     cout << endl;
 //    cout << ss;
+}
+
+void ofApp::audioOut(float *output, int bufferSize, int nChannels) {
+    vector<shared_ptr<Plate> > plates = pm->plates;
+    static int baseIndex = 0;
+    for (int i = 0; i < bufferSize; i++) {
+        baseIndex = i * nChannels;
+        for (auto plate : plates) {
+            output[baseIndex + plate->audioChannel] = plate->play();
+        }
+    }
 }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>A2144D46-CE3A-43D4-B9FB-0DCD6CC078F7</string>
+	<key>IDESourceControlProjectName</key>
+	<string>lexus_plates</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>8C069F89924A8C99BDCE4BCAD9B9A2F69C459A42</key>
+		<string>https://github.com/whg/chaldni.git</string>
+		<key>90E2F969A762FB62C413A0C44D1F334E6EC3F531</key>
+		<string>https://github.com/whg/ofxMidi.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>lexus_plates.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>8C069F89924A8C99BDCE4BCAD9B9A2F69C459A42</key>
+		<string>../..</string>
+		<key>90E2F969A762FB62C413A0C44D1F334E6EC3F531</key>
+		<string>../../../../../addons/ofxMidi</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/whg/chaldni.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>8C069F89924A8C99BDCE4BCAD9B9A2F69C459A42</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>8C069F89924A8C99BDCE4BCAD9B9A2F69C459A42</string>
+			<key>IDESourceControlWCCName</key>
+			<string>lexus_plates</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>90E2F969A762FB62C413A0C44D1F334E6EC3F531</string>
+			<key>IDESourceControlWCCName</key>
+			<string>ofxMidi</string>
+		</dict>
+	</array>
+</dict>
+</plist>

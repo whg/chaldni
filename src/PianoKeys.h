@@ -9,10 +9,11 @@
 #pragma once
 
 #include "ofMain.h"
+#include "Plate.h"
 
 //static string names[] = { "C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10" };
-static string notes[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-static int noteOrders[12] = { 1, 3, 6, 8, 10, 0, 2, 4, 5, 7, 9, 11 };
+static string notes[] = { "C", "Cs", "D", "Ds", "E", "F", "Fs", "G", "Gs", "A", "As", "B" };
+static int noteOrders[12] = { 0, 2, 4, 5, 7, 9, 11, 1, 3, 6, 8, 10 };
 
 class PianoKeys {
 public:
@@ -26,23 +27,31 @@ public:
         Key(float x, float y, float w, float h, int p, bool sharp=false):
             rect(x, y, w, h), pitch(p), sharp(sharp) {
             name = notes[p % 12] + ofToString(p/12);
+            on = false;
         }
         
         void draw() {
-            ofSetColor(10);
-            if (sharp) {
-                ofFill();
+
+            if (on) {
+                ofSetColor(255, 100, 100);
             }
             else {
-                ofNoFill();
+                ofSetColor(10);
             }
             
+            if (sharp || on) {
+                ofFill();
+                ofDrawRectangle(rect);
+            }
+            
+            ofSetColor(10);
+            ofNoFill();
             ofDrawRectangle(rect);
 
             
             if ((pitch) % 12 == 0) {
                 ofSetColor(0);
-                ofDrawBitmapString("C" + ofToString(pitch/12), rect.getPosition().x+1, rect.getPosition().y+rect.height-2);
+                ofDrawBitmapString(name, rect.getPosition().x+1, rect.getPosition().y+rect.height-2);
             }
         }
     };
@@ -72,6 +81,10 @@ public:
             int noteCounter = 0;
             float x = whiteKeyWidth * 7 * n;
             
+            for (int i = 0; i < 7; i++) {
+                keys.push_back(Key(i*whiteKeyWidth + x, 0, whiteKeyWidth, h, startingNote + noteOrders[noteCounter++]));
+            }
+            
             float bkw = whiteKeyWidth * 0.5;
             float bkh = h * 0.6;
             
@@ -83,9 +96,7 @@ public:
             keys.push_back(Key(6*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true));
             
             
-            for (int i = 0; i < 7; i++) {
-                keys.push_back(Key(i*whiteKeyWidth + x, 0, whiteKeyWidth, h, startingNote + noteOrders[noteCounter++]));
-            }
+            
             
             
             
@@ -122,5 +133,22 @@ public:
         }
         foundKey = NULL;
         return false;
+    }
+    
+    void highlightKeysForPlate(Plate *plate) {
+    
+        for (auto &key : keys) {
+            for (auto &note : plate->midiNotes) {
+                key.on = key.pitch == note.first;
+                if (key.on) break;
+                if (key.on) cout << "found pitch " << note.first << " " << key.rect.getX();
+            }
+        }
+    }
+    
+    void highlightKeys(bool v) {
+        for (auto &key : keys) {
+            key.on = v;
+        }
     }
 };

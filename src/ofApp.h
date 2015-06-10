@@ -8,11 +8,12 @@
 #include "PianoKeys.h"
 
 #include "ofxGui.h"
-
+#include "ofxMaxim.h"
 
 class ofApp : public ofBaseApp, public ofxMidiListener {
 public:
     void setup();
+    void exit();
     void update();
     void draw();
     
@@ -34,14 +35,14 @@ public:
     void newMidiMessage(ofxMidiMessage& msg);
     
     
-    PlateManager pm;
+    PlateManager *pm, *plateManager;
     
 //    ofxPanel panel;
 //    ofxButton button;
 //    ofxGuiGroup group;
 //    ofParameter<float> xx;
 //    ofxLabel label;
-    ofxToggle toggle;
+//    ofxToggle toggle;
     
     //vector<int> pitches;
     set<int> pitches;
@@ -57,7 +58,7 @@ protected:
     ofxGuiGroup midiNotesGroup;
     vector< shared_ptr<ofxToggle> > midiNotes;
     Plate *currentPlate;
-    void createPanel(Plate *plate, bool setPos=true);
+    void createPanel(Plate *plate, bool setPos=true, bool forPattern=false);
     bool showPanel;
 
     void valChange(bool &b);
@@ -68,4 +69,11 @@ protected:
     ofVec3f connectStart, connectEnd;
     Plate *connectedPlate;
     
+    
+protected:
+    map<int, ofxMaxiOsc> generators;
+    void audioOut(float *output, int bufferSize, int nChannels);
+    
+protected:
+    PlateManagerMidi *noteToFigureManager;
 };

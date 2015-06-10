@@ -11,14 +11,9 @@
 #include "ofMain.h"
 #include "ofxGui.h"
 #include "ofxTools.h"
+#include "ofxMaxim.h"
 
-#define MAX_NOTES 9
-
-enum render_t {
-    NORMAL,
-    PICK,
-    NOTE_SELECT,
-};
+#include "Constants.h"
 
 
 class Plate {
@@ -30,7 +25,7 @@ public:
     ofMesh mesh;
     ofShader shader;
     
-    int figureNum, frameNum;
+    int patternNum, frameNum;
     
     int id;
     ofColor pickColour;
@@ -40,12 +35,16 @@ public:
     float tint;
     
     
-    
     ofParameter<int> audioChannel;
     ofParameter<float> volume;
+    ofParameter<bool> randomFigure;
     map<int, shared_ptr< ofParameter<bool> > > midiNotes;
     
     bool connecting;
+    
+public:
+    ofxMaxiOsc osc;
+    float play();
     
 public:
     Plate(float x, float y, float w);
@@ -65,6 +64,7 @@ inline int ofColorToCid(ofColor c) {
 
 class PlateManager {
     
+public:
     vector< shared_ptr<Plate> > plates;
     
 public:
@@ -79,127 +79,38 @@ public:
     
     static bool drawSpecial;
     
+    render_t currentRenderType;
+    
 public:
-    PlateManager(): plateWidth(128), platePadding(10) {
-        ofRegisterKeyEvents(this);
-        currentPlate = NULL;
-        currentEditingNoteOrder = 0;
-        listeningForNote = false;
-        
-        drawSpecial = false;
-    }
+    PlateManager();
     
-    void setup(int w, int h) {
-        float pd = plateWidth + platePadding;
-    
-        plates.clear();
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                float x = j * pd - (w * 0.5 * pd) + plateWidth * 0.5;
-                float y = i * pd - (h * 0.5 * pd) + plateWidth * 0.5;
-                plates.push_back(shared_ptr<Plate>(new Plate(x, y, plateWidth)));
-            }
-        }
-        
-        int counter = 0;
-        for (auto p : plates) {
-            p->id = counter++;
-            int c2 = counter * 5;
-            p->pickColour = cidToOfColor(c2);
-            colourMap[c2]  = p->id;
-        }
-        
-        pickFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGB);
-        pickFbo.begin();
-        ofClear(0);
-        pickFbo.end();
-        
-        pickPixels.allocate(pickFbo.getWidth(), pickFbo.getHeight(), OF_PIXELS_RGB);
-        
-    }
-    
-    void draw(render_t renderType=NORMAL) {
+    virtual void setup(int w, int h);
+    void draw(render_t renderType=NORMAL);
+    virtual void update();
 
-        if (renderType == NOTE_SELECT) {
-            editNoteOrders();
-            return;
-        }
-        
-        for (auto p : plates) {
-            p->draw(renderType);
-        }
-        
+    void initPlates();
+    Plate* getPlateAt(ofEasyCam &cam, int x, int y);
 
-    }
+public:
+    void editNoteOrders();
+    ofxPanel savePanel;
+    ofxButton saveButton;
+    ofxGuiGroup savesGroup;
+    vector< shared_ptr<ofxToggle> > savedFiles;
+    void savedFilePressed(bool &b);
     
-    Plate* getPlateAt(ofEasyCam &cam, int x, int y) {
-        
-        pickFbo.begin();
-        ofBackground(0);
-        
-        cam.begin();
-        draw(PICK);
-        cam.end();
-        pickFbo.end();
-        
-        pickFbo.readToPixels(pickPixels);
-        
-        ofColor col = pickPixels.getColor(x, y);
-        int cid = ofColorToCid(col);
-        
-        if (colourMap.count(cid) > 0) {
-            cout << "found id: " << colourMap[cid] << endl;
-            return plates[colourMap[cid]].get();
-        }
+    void saveCurrentConfig();
+    void loadConfig(string filename);
+    void reloadSaves();
+    
+public:
+    void keyPressed(ofKeyEventArgs &args);
+    void keyReleased(ofKeyEventArgs &args);
+    
+};
 
-        cout << "not found" << endl;
-        return NULL;
-    }
-    
-    void editNoteOrders() {
-    
-        float space = 600;
-        int end = drawSpecial ? MAX_NOTES-1 : currentEditingNoteOrder;
-        for (int i = end, j = 0; i >= currentEditingNoteOrder; i--, j++) {
-            ofPushMatrix();
-            ofTranslate(0, 0, (end+1 - currentEditingNoteOrder -1)*-space + j * space);
-
-            bool doneLabel = false;
-            
-            for (auto p : plates) {
-                p->listeningForNote = p->listeningForNote && i == currentEditingNoteOrder;
-                p->tint = currentEditingNoteOrder*(1.0 / (end+1)) +  (j+1) * (1.0 / (end+1));
-                p->draw(NOTE_SELECT, i);
-
-                if (!doneLabel && i == currentEditingNoteOrder) {
-                    ofSetColor(255);
-                    ofDrawBitmapString("Editing Layer " + ofToString(currentEditingNoteOrder+1), p->pos - ofVec2f(p->size, p->size+20));
-                    doneLabel = true;
-                }
-            }
-
-            
-            ofPopMatrix();
-        }
-        
-
-//        ofDrawBitmapString(, 10, ofGetHeight() - 10);
-    }
-    
-    
-    void keyPressed(ofKeyEventArgs &args) {
-        int key = args.key;
-        if (listeningForNote && key > int('0') && key <= int('9')) {
-            currentPlate->noteOrders[currentEditingNoteOrder] = key - int('0');
-            currentPlate->listeningForNote = false;
-            listeningForNote = false;
-        }
-        
-        KEY(OF_KEY_UP, currentEditingNoteOrder = MIN(MAX_NOTES-1, currentEditingNoteOrder+1))
-        KEY(OF_KEY_DOWN, currentEditingNoteOrder = MAX(0, currentEditingNoteOrder-1))
-    }
-    
-    void keyReleased(ofKeyEventArgs &args) {
-        
-    }
+class PlateManagerMidi : public PlateManager {
+public:
+    void setup(int w, int h);
+    void update();
 };
