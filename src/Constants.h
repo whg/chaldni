@@ -10,9 +10,11 @@
 
 #define MAX_NOTES 9
 
-#define NUM_FIGURES 20
+#define NUM_FIGURES 11
 #define FIGURE_GRID_X 5
 #define FIGURE_GRID_Y 4
+
+#define MAX_CHANNELS 5
 
 enum render_t {
     NORMAL,

@@ -10,11 +10,33 @@
 #include "ChladniDB.h"
 #include "PianoKeys.h"
 
-ofImage *imgMap = NULL;
-ofTrueTypeFont *font = NULL;
+#define NUM_FRAMES 5
+#define NUM_FIGURES 11
+
+static ofImage *imgMap = NULL;
+static ofTrueTypeFont *font = NULL;
+int pc = 0;
 
 static int audioChannelCounter = 0;
 
+void initAssets() {
+    
+    if (!font) {
+        cout << "loading font, font = " << font << endl;
+        font = new ofTrueTypeFont();
+        font->load("/Library/Fonts/Arial.ttf", 48, false, true, true);
+    }
+    
+    if (!imgMap) {
+        imgMap = new ofImage();
+        imgMap->load("m1.png");
+    }
+}
+
+void delAssets() {
+    delete font;
+    delete imgMap;
+}
 
 Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(false), tint(false) {
     
@@ -22,16 +44,7 @@ Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(fa
     
     mesh = ofMesh::plane(w, w);
     
-    if (!imgMap) {
-        imgMap = new ofImage();
-        imgMap->load("map.png");
-    }
-    
-    if (!font) {
-        font = new ofTrueTypeFont();
-        font->load("/Library/Fonts/Arial.ttf", 48, false, true, true);
-    }
-    
+    patternNum = 0;
 
     /////////////////////////////////////////////////////////
     // vertex shader
@@ -58,10 +71,11 @@ Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(fa
                           uniform int figure;
                           uniform int frame;
                           uniform sampler2DRect tex;
-                          uniform vec2 size = vec2(128.0);
-                          
+                          uniform vec2 size = vec2(256.0);
+                        
                           void main() {
-                              vec4 c = texture2DRect(tex, vec2((gl_TexCoord[0].x / 8.0) + float(frame) * size.x, gl_TexCoord[0].y));
+                              vec4 c = texture2DRect(tex, vec2(gl_TexCoord[0].x / 5.0 + float(frame) * size.x,
+                                                               gl_TexCoord[0].y / 11.0 + float(figure) * size.y));
                               gl_FragColor = c; //vec4(texc.x, texc.y, 1.0, 1.0); //c; //vec4(1.0, 0.0, 1.0, 1.0);
                               
                           }
@@ -70,30 +84,33 @@ Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(fa
     shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag);
     shader.linkProgram();
     
-    for (int i = 0; i < MAX_NOTES; i++) {
-        noteOrders[i] = 1;
+    for (int i = 1; i <= MAX_NOTES; i++) {
+        noteOrders[i] = i;
     }
     
     audioChannel.set("audio channel", audioChannelCounter++, 0, 6);
     volume.set("volume", 0.5, 0.0, 1.0);
     randomFigure.set("randomFigure", false);
     
-    for (int i = 36; i < 72; i++) {
-        midiNotes[i] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>(notes[i%12] + ofToString(i/12), true));
+    for (int i = 0; i < NUM_FIGURES; i++) {
+        CPattern pattern = ChladniDB::patternForNo(i);
+        float freq = pattern.data.frequency;
+        patternFrequencies.push_back(shared_ptr<ofParameter<float> >(new ofParameter<float>(ofToString(i), freq, freq-10, freq+10)));
     }
+    
     
     connecting = false;
 }
 
 Plate::~Plate() {
-    if (imgMap) {
-        delete imgMap;
-        imgMap = NULL;
-    }
-    if (font) {
-        delete font;
-        font = NULL;
-    }
+//    if (imgMap) {
+//        delete imgMap;
+//        imgMap = NULL;
+//    }
+//    if (font) {
+//        delete font;
+//        font = NULL;
+//    }
 }
 
 void Plate::draw(render_t renderType, int noteOrder) {
@@ -132,7 +149,7 @@ void Plate::draw(render_t renderType, int noteOrder) {
         
         if (ofRandom(0, 1) < 0.5) {
             frameNum++;
-            frameNum%= 8;
+            frameNum%= NUM_FRAMES;
         }
         
         shader.begin();
@@ -158,10 +175,11 @@ void Plate::draw(render_t renderType, int noteOrder) {
 }
 
 float Plate::play() {
-    CPattern pattern = ChladniDB::patternForNo(patternNum);
-    if (pattern.audioType == SINE) {
-        return osc.sinewave(pattern.data.frequency);
-    }
+
+    patternFrequencies[patternNum];
+//    if (pattern.audioType == SINE) {
+        return osc.sinewave(patternFrequencies[patternNum].get()->get());
+//    }
     return 0.0f;
 }
 
@@ -175,7 +193,7 @@ float Plate::play() {
 PlateManager::PlateManager(): plateWidth(128), platePadding(10) {
     ofRegisterKeyEvents(this);
     currentPlate = NULL;
-    currentEditingNoteOrder = 0;
+    currentEditingNoteOrder = 1;
     listeningForNote = false;
     
     drawSpecial = false;
@@ -183,6 +201,10 @@ PlateManager::PlateManager(): plateWidth(128), platePadding(10) {
     savePanel.setup("save config");
     savesGroup.setup("saves");
     
+}
+
+PlateManager::~PlateManager() {
+    ofUnregisterKeyEvents(this);
 }
 
 void PlateManager::setup(int w, int h) {
@@ -287,7 +309,7 @@ void PlateManager::editNoteOrders() {
             
             if (!doneLabel && i == currentEditingNoteOrder) {
                 ofSetColor(255);
-                ofDrawBitmapString("Editing Layer " + ofToString(currentEditingNoteOrder+1), p->pos - ofVec2f(p->size, p->size+20));
+                ofDrawBitmapString("Editing Layer " + ofToString(currentEditingNoteOrder), p->pos - ofVec2f(p->size, p->size+20));
                 doneLabel = true;
             }
         }
@@ -309,8 +331,8 @@ void PlateManager::keyPressed(ofKeyEventArgs &args) {
         listeningForNote = false;
     }
     
-    KEY(OF_KEY_UP, currentEditingNoteOrder = MIN(MAX_NOTES-1, currentEditingNoteOrder+1))
-    KEY(OF_KEY_DOWN, currentEditingNoteOrder = MAX(0, currentEditingNoteOrder-1))
+    KEY(OF_KEY_UP, currentEditingNoteOrder = MIN(MAX_NOTES, currentEditingNoteOrder+1))
+    KEY(OF_KEY_DOWN, currentEditingNoteOrder = MAX(1, currentEditingNoteOrder-1))
     
     if (currentRenderType == NOTE_SELECT) {
         KEY('s', saveCurrentConfig())
@@ -324,7 +346,8 @@ void PlateManager::keyReleased(ofKeyEventArgs &args) {
 void PlateManager::saveCurrentConfig() {
 
     string filename = ofSystemTextBoxDialog("What would you like to call this save?");
-
+    if (filename == "") return;
+    
     ofXml xml;
     
     xml.addChild("platesConfig");
@@ -356,9 +379,9 @@ void PlateManager::saveCurrentConfig() {
         
         
         ofXml notesXml;
-        notesXml.addChild("midiNotes");
-        notesXml.setTo("midiNotes");
-        for (auto q : plate->midiNotes) {
+        notesXml.addChild("channels");
+        notesXml.setTo("channels");
+        for (auto q : plate->channels) {
             notesXml.addValue(q.second->getName(), q.first);
         }
         pxml.addXml(notesXml);
@@ -427,14 +450,14 @@ void PlateManager::loadConfig(string filename) {
 
             xml.setTo("//plates");
             xml.setToChild(i);
-            xml.setTo("midiNotes");
-            int nMidiNotes = xml.getNumChildren();
-            for (int j = 0; j < nMidiNotes; j++) {
+            xml.setTo("channels");
+            int nChannels = xml.getNumChildren();
+            for (int j = 0; j < nChannels; j++) {
                 xml.setTo("//plates");
                 xml.setToChild(i);
-                xml.setTo("midiNotes");
+                xml.setTo("channels");
                 xml.setToChild(j);
-                plate->midiNotes[xml.getIntValue()] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>(xml.getName(), true));
+                plate->channels[xml.getIntValue()] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>(xml.getName(), true));
             }
             
             plates.push_back(plate);
@@ -447,6 +470,11 @@ void PlateManager::loadConfig(string filename) {
     ofLogNotice() << "loaded from " << filename;
 
 
+    for (auto &toggle : savedFiles) {
+        ofParameter<bool> *p = (ofParameter<bool>*) &toggle->getParameter();
+        p->set(false);
+    }
+
 }
 
 void PlateManager::reloadSaves() {
@@ -458,7 +486,6 @@ void PlateManager::reloadSaves() {
     ofDirectory dir(ofToDataPath(SAVE_DIRECTORY));
     
     
-    cout << "files = " << endl;
     dir.listDir();
     vector<ofFile> files = dir.getFiles();
 //    return;
@@ -489,24 +516,151 @@ void PlateManager::savedFilePressed(bool &b) {
         if (p->get()) {
             ofLogNotice() << "loading " << toggle->getName();
             loadConfig(ofToDataPath(SAVE_DIRECTORY + toggle->getName()));
-            
         }
-//        if ()
     }
 }
 
 #pragma mark -
 
+#define MIDI_CONFIG_FILENAME "patternConfig.xml"
+
 void PlateManagerMidi::setup(int w, int h) {
     PlateManager::setup(w, h);
-    int counter = 1;
+    int counter = 0;
     for (auto &plate : plates) {
         plate->patternNum = counter++;
-        plate->midiNotes.clear();
+//        plate->midiNotes.clear();
+
+//        for (int i = 36; i < 72; i++) {
+//            plate->midiNotes[i] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>(notes[i%12] + ofToString(i/12), true));
+//        }
+        
+    }
+    
+    int n = plates.size();
+    int j = 0;
+    for(int i = 0; i < n; i++) {
+        if (i >= NUM_FIGURES) {
+            plates.erase(plates.begin() + j);
+            
+            continue;
+        }
+        j++;
     }
     
 }
 
 void PlateManagerMidi::update() {
 //    ChladniDB::
+}
+
+void PlateManagerMidi::keyPressed(ofKeyEventArgs &args) {
+    int key = args.key;
+    
+    KEY('s', saveCurrentConfig())
+    
+    KEY('l', loadConfig())
+}
+
+void PlateManagerMidi::keyReleased(ofKeyEventArgs &args) {
+    int key = args.key;
+}
+
+void PlateManagerMidi::saveCurrentConfig() {
+    cout << "PlateManagerMidi::saveCurrentConfig()" << endl;
+    
+    ofXml xml;
+    
+    xml.addChild("patternConfig");
+    xml.setTo("patternConfig");
+    xml.setAttribute("version", "0.1");
+    
+    xml.addChild("patterns");
+    xml.setTo("patterns");
+    
+    for (auto &plate : plates) {
+        ofXml pxml;
+        string name = "pattern";
+        pxml.addChild(name);
+        pxml.setTo(name);
+        pxml.addValue("id", plate->id);
+        pxml.addValue("volume", plate->volume);
+        
+        
+        ofXml notesXml;
+        notesXml.addChild("midiNotes");
+        notesXml.setTo("midiNotes");
+        for (auto q : plate->midiNotes) {
+            notesXml.addValue(q.second->getName(), q.first);
+        }
+        pxml.addXml(notesXml);
+        
+        xml.addXml(pxml);
+        
+    }
+    
+    
+    ofDirectory dir(ofToDataPath(SAVE_DIRECTORY));
+    
+    if (!dir.exists()) {
+        dir.create();
+    }
+
+    string filename = MIDI_CONFIG_FILENAME;
+    xml.save(filename);
+    
+    ofLogNotice() << "saved config to " << filename;
+}
+
+
+void PlateManagerMidi::loadConfig() {
+    
+    ofXml xml;
+    
+    bool success = xml.load(MIDI_CONFIG_FILENAME);
+    
+    if (!success) {
+        ofLogError() << "can't load confing from " << MIDI_CONFIG_FILENAME;
+        return;
+    }
+    
+    
+    xml.setTo("patternConfig");
+    float version = ofToFloat(xml.getAttribute("version"));
+    
+    if (version >= 0.1) {
+        xml.setTo("//patterns");
+        int nplates = xml.getNumChildren();
+        
+        for (int i = 0; i < nplates; i++) {
+            xml.setTo("//patterns");
+            xml.setToChild(i);
+            int id = xml.getIntValue("id");
+            
+            plates[i]->id = id;
+
+            float volume = xml.getFloatValue("volume");
+            plates[i]->volume = volume;
+            
+            
+            xml.setTo("//patterns");
+            xml.setToChild(i);
+            xml.setTo("midiNotes");
+            int nChannels = xml.getNumChildren();
+            plates[i]->midiNotes.clear();
+            for (int j = 0; j < nChannels; j++) {
+                xml.setTo("//patterns");
+                xml.setToChild(i);
+                xml.setTo("midiNotes");
+                xml.setToChild(j);
+                plates[i]->midiNotes[xml.getIntValue()] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>(xml.getName(), true));
+            }
+            
+        }
+    }
+
+    
+    ofLogNotice() << "loaded from pattern config";
+    
+    
 }

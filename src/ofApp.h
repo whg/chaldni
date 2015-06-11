@@ -9,6 +9,7 @@
 
 #include "ofxGui.h"
 #include "ofxMaxim.h"
+#include "Constants.h"
 
 class ofApp : public ofBaseApp, public ofxMidiListener {
 public:
@@ -37,17 +38,9 @@ public:
     
     PlateManager *pm, *plateManager;
     
-//    ofxPanel panel;
-//    ofxButton button;
-//    ofxGuiGroup group;
-//    ofParameter<float> xx;
-//    ofxLabel label;
-//    ofxToggle toggle;
-    
-    //vector<int> pitches;
-    set<int> pitches;
     
     PianoKeys pianoKeys;
+    Channels channels;
 
     render_t currentRenderType;
     
@@ -57,6 +50,8 @@ protected:
     ofxPanel panel;
     ofxGuiGroup midiNotesGroup;
     vector< shared_ptr<ofxToggle> > midiNotes;
+    ofxGuiGroup patternFreqsGroup;
+//    vector< shared_ptr<ofxSlider<<#typename Type#>>> > midiNotes;
     Plate *currentPlate;
     void createPanel(Plate *plate, bool setPos=true, bool forPattern=false);
     bool showPanel;
@@ -76,4 +71,13 @@ protected:
     
 protected:
     PlateManagerMidi *noteToFigureManager;
+    
+protected:
+    void saveState();
+    
+public:
+    int currentNotesPlaying;
+    
+    map< int, map<int, int> > playingPitches;
+
 };

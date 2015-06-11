@@ -22,7 +22,7 @@
 		<key>8C069F89924A8C99BDCE4BCAD9B9A2F69C459A42</key>
 		<string>../..</string>
 		<key>90E2F969A762FB62C413A0C44D1F334E6EC3F531</key>
-		<string>../../../../../addons/ofxMidi</string>
+		<string>../../../addons/ofxMidi</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/whg/chaldni.git</string>

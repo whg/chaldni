@@ -23,17 +23,22 @@ public:
         int pitch;
         bool sharp;
         string name;
+        ofColor onCol;
+        static ofColor baseOnCol;
+
+        Key() {}
         
         Key(float x, float y, float w, float h, int p, bool sharp=false):
             rect(x, y, w, h), pitch(p), sharp(sharp) {
             name = notes[p % 12] + ofToString(p/12);
             on = false;
+            onCol = baseOnCol;
         }
         
         void draw() {
 
             if (on) {
-                ofSetColor(255, 100, 100);
+                ofSetColor(onCol);
             }
             else {
                 ofSetColor(10);
@@ -51,7 +56,7 @@ public:
             
             if ((pitch) % 12 == 0) {
                 ofSetColor(0);
-                ofDrawBitmapString(name, rect.getPosition().x+1, rect.getPosition().y+rect.height-2);
+                ofDrawBitmapString(name, rect.getPosition().x+2, rect.getPosition().y+rect.height-4);
             }
         }
     };
@@ -61,11 +66,13 @@ protected:
     
     int nOctaves;
     float whiteKeyWidth;
-    vector<Key> keys;
+
+
 
 public:
     Key *foundKey;
-    
+    vector< shared_ptr<Key> > keys;
+    map<int, int> keyMap;
 public:
     
     PianoKeys() {}
@@ -82,28 +89,28 @@ public:
             float x = whiteKeyWidth * 7 * n;
             
             for (int i = 0; i < 7; i++) {
-                keys.push_back(Key(i*whiteKeyWidth + x, 0, whiteKeyWidth, h, startingNote + noteOrders[noteCounter++]));
+                keys.push_back(shared_ptr<Key>(new Key(i*whiteKeyWidth + x, 0, whiteKeyWidth, h, startingNote + noteOrders[noteCounter++])));
             }
             
             float bkw = whiteKeyWidth * 0.5;
             float bkh = h * 0.6;
             
-            keys.push_back(Key(1*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true));
-            keys.push_back(Key(2*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true));
+            keys.push_back(shared_ptr<Key>(new Key(1*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true)));
+            keys.push_back(shared_ptr<Key>(new Key(2*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true)));
             
-            keys.push_back(Key(4*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true));
-            keys.push_back(Key(5*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true));
-            keys.push_back(Key(6*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true));
-            
-            
-            
-            
+            keys.push_back(shared_ptr<Key>(new Key(4*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true)));
+            keys.push_back(shared_ptr<Key>(new Key(5*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true)));
+            keys.push_back(shared_ptr<Key>(new Key(6*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true)));
             
             
             startingNote+= 12;
         }
         
-            foundKey = NULL;
+        for (int i = 0; i < keys.size(); i++) {
+            keyMap[keys[i]->pitch] = i;
+        }
+        
+        foundKey = NULL;
     }
     
     void setNOctaves(int n) {
@@ -116,7 +123,7 @@ public:
         ofSetColor(255);
         ofDrawRectangle(rect);
         for (auto &key : keys) {
-            key.draw();
+            key->draw();
         }
         ofPopStyle();
     }
@@ -124,9 +131,9 @@ public:
     bool findKey(int x, int y) {
         if (rect.inside(x, y)) {
             for (auto &key : keys) {
-                if (key.rect.inside(x, y)) {
-                    foundKey = &key;
-                    cout << "found key " << key.name << endl;
+                if (key->rect.inside(x, y)) {
+                    foundKey = key.get();
+                    cout << "found key " << key->name << endl;
                     return true;
                 }
             }
@@ -139,16 +146,45 @@ public:
     
         for (auto &key : keys) {
             for (auto &note : plate->midiNotes) {
-                key.on = key.pitch == note.first;
-                if (key.on) break;
-                if (key.on) cout << "found pitch " << note.first << " " << key.rect.getX();
+                key->on = key->pitch == note.first;
+                if (key->on) break;
+                if (key->on) cout << "found pitch " << note.first << " " << key->rect.getX();
             }
         }
     }
     
     void highlightKeys(bool v) {
         for (auto &key : keys) {
-            key.on = v;
+            key->on = v;
         }
     }
+};
+
+class Channels : public PianoKeys {
+
+public:
+    class Channel : public Key {
+    public:
+        int number;
+//        ofColor col;
+        
+        Channel(int n, float x, float y, float w, float h): PianoKeys::Key(x, y, w, h, 0) {
+            name = "Channel " + ofToString(n);
+            number = n;
+            onCol = ofColor::fromHsb(float(n)/6.0 * 255, 120, 255);
+            on = true;
+        }
+    };
+
+public:
+    Channels(int n=5, int x=0, int y = 0, int w=ofGetWidth(), int h=20) {
+        rect = ofRectangle(x, y, w, h);
+        
+        int tw = float(w) / n;
+        for (int i = 0; i < n; i++) {
+            keys.push_back(shared_ptr<Key>(new Channel(i+1, i * tw + x, y, tw, h)));
+        }
+        
+    }
+    
 };

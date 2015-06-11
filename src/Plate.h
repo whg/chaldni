@@ -31,7 +31,7 @@ public:
     ofColor pickColour;
     
     bool listeningForNote;
-    int noteOrders[MAX_NOTES];
+    int noteOrders[MAX_NOTES+1];
     float tint;
     
     
@@ -39,12 +39,16 @@ public:
     ofParameter<float> volume;
     ofParameter<bool> randomFigure;
     map<int, shared_ptr< ofParameter<bool> > > midiNotes;
+    map<int, shared_ptr< ofParameter<bool> > > channels;
     
     bool connecting;
+    
     
 public:
     ofxMaxiOsc osc;
     float play();
+    
+    vector<shared_ptr< ofParameter<float> > > patternFrequencies;
     
 public:
     Plate(float x, float y, float w);
@@ -80,9 +84,11 @@ public:
     static bool drawSpecial;
     
     render_t currentRenderType;
+
     
 public:
     PlateManager();
+    ~PlateManager();
     
     virtual void setup(int w, int h);
     void draw(render_t renderType=NORMAL);
@@ -99,13 +105,14 @@ public:
     vector< shared_ptr<ofxToggle> > savedFiles;
     void savedFilePressed(bool &b);
     
-    void saveCurrentConfig();
+    virtual void saveCurrentConfig();
     void loadConfig(string filename);
+    
     void reloadSaves();
     
 public:
-    void keyPressed(ofKeyEventArgs &args);
-    void keyReleased(ofKeyEventArgs &args);
+    virtual void keyPressed(ofKeyEventArgs &args);
+    virtual void keyReleased(ofKeyEventArgs &args);
     
 };
 
@@ -113,4 +120,13 @@ class PlateManagerMidi : public PlateManager {
 public:
     void setup(int w, int h);
     void update();
+    
+    void saveCurrentConfig();
+    void loadConfig();
+    
+    void keyPressed(ofKeyEventArgs &args);
+    void keyReleased(ofKeyEventArgs &args);
 };
+
+void initAssets();
+void delAssets();

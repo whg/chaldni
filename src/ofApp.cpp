@@ -1,14 +1,19 @@
 #include "ofApp.h"
 #include "ofxTools.h"
-
-#include "Constants.h"
+#include "ChladniDB.h"
 
 bool PlateManager::drawSpecial;
 bool working = false;
 
+ofColor PianoKeys::Key::baseOnCol;
+
 void ofApp::setup() {
 
     ofBackground(20);
+    
+    initAssets();
+    ChladniDB::setup();
+
     
     midiIn.ignoreTypes(false, false, false);
     midiIn.addListener(this);
@@ -23,14 +28,17 @@ void ofApp::setup() {
 //    ofSoundStreamListDevices();
 //    button.draw();
 
+    PianoKeys::Key::baseOnCol = ofColor(255, 100, 100);
 
 //    ofSetEscapeQuitsApp(false);
 
-    pianoKeys = PianoKeys(2, 7);
+    int pianoHeight = 50;
+    pianoKeys = PianoKeys(2, 7, 0, 0, ofGetWidth(), pianoHeight);
+    channels = Channels(5, 0, pianoHeight);
     
     plateManager = new PlateManager();
-    plateManager->setup(5, 5);
-    plateManager->setup(6, 2);
+//    plateManager->setup(5, 5);
+    plateManager->setup(5, 1);
     
     pm = plateManager;
     
@@ -41,6 +49,7 @@ void ofApp::setup() {
 
     panel.setup("");
     midiNotesGroup.setup("MIDI notes");
+    patternFreqsGroup.setup("Pattern Frequencies");
 
 //    panel.add(xx.set("something", 2, 0, 3));
 //
@@ -67,15 +76,24 @@ void ofApp::setup() {
     
     noteToFigureManager = new PlateManagerMidi();
     noteToFigureManager->setup(FIGURE_GRID_X, FIGURE_GRID_Y);
+    
+    
+    currentNotesPlaying = 0;
+    for (int i = 1; i <= MAX_CHANNELS; i++) {
+        playingPitches[i] = map<int,int>();
+
+    }
 }
 
 void ofApp::exit() {
     delete noteToFigureManager;
     delete plateManager;
+    
+    delAssets();
 }
 
 void ofApp::resetView() {
-    cam.setPosition(0, 0, 1400);
+    cam.setPosition(0, 0, 500);
     cam.lookAt(ofVec3f(-0, -0, -1));
 }
 
@@ -91,9 +109,18 @@ void ofApp::draw() {
 
     if (currentRenderType == MIDI_MANAGER) {
         ofBackground(100, 75, 150);
+
     }
     else ofBackground(0);
 
+    if (currentRenderType == NORMAL) {
+        channels.draw();
+    }
+    if (currentRenderType == NORMAL || currentRenderType == MIDI_MANAGER) {
+        pianoKeys.draw();
+    }
+    
+    
     cam.begin();
     
 //    cout << cam.getLookAtDir() << endl;
@@ -122,9 +149,7 @@ void ofApp::draw() {
     if (currentRenderType == NOTE_SELECT) {
         pm->savePanel.draw();
     }
-    else {
-        pianoKeys.draw();
-    }
+    
     
     
     
@@ -156,12 +181,17 @@ void ofApp::keyPressed(int key) {
 
     if (currentRenderType == MIDI_MANAGER) {
         pm = noteToFigureManager;
+        
+        for (auto &key : pianoKeys.keys) {
+            key->onCol = PianoKeys::Key::baseOnCol;
+        }
     }
     else pm = plateManager;
     
     // this seems to make sense...
     pianoKeys.highlightKeys(false);
     
+    if (key != OF_KEY_CONTROL) showPanel = false;
 }
 
 
@@ -223,7 +253,13 @@ void ofApp::mousePressed(int x, int y, int button) {
     }
     
     if (connectMode) {
-        connecting = pianoKeys.findKey(x, y);
+        connecting = false;
+        if (currentRenderType == MIDI_MANAGER) {
+            connecting = pianoKeys.findKey(x, y);
+        }
+        else if (currentRenderType == NORMAL) {
+            connecting = channels.findKey(x, y);
+        }
         if (connecting) {
             connectStart = ofVec2f(x, y);
             connectEnd = ofVec2f(x, y);
@@ -241,9 +277,18 @@ void ofApp::mouseReleased(int x, int y, int button) {
     if (connecting) {
         cout << connectedPlate << endl;
         if (connectedPlate) {
-            PianoKeys::Key *key = pianoKeys.foundKey;
-            connectedPlate->midiNotes[key->pitch] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>(key->name, true));
-            cout << "added to " << key->name << endl;
+            
+            if (currentRenderType == MIDI_MANAGER) {
+                PianoKeys::Key *key = pianoKeys.foundKey;
+                connectedPlate->midiNotes[key->pitch] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>(key->name, true));
+                cout << "added to " << key->name << endl;
+            }
+            else if (currentRenderType == NORMAL) {
+                Channels::Channel *channel = (Channels::Channel*) channels.foundKey;
+                connectedPlate->channels[channel->number] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>(channel->name, true));
+                cout << "added channel " << channel->number << "\n";
+            }
+            
             connectedPlate->connecting = false;
             
             if (connectedPlate == currentPlate && showPanel) {
@@ -280,10 +325,20 @@ void ofApp::createPanel(Plate *plate, bool setPos, bool forPattern) {
     }
     panel.add(plate->volume);
     
+    map<int, shared_ptr< ofParameter<bool> > > *data;
+    
+    if (currentRenderType == NORMAL) {
+        data = &plate->channels;
+        midiNotesGroup.setName("Channels");
+    }
+    else if (currentRenderType == MIDI_MANAGER) {
+        data = &plate->midiNotes;
+        midiNotesGroup.setName("MIDI notes");
+    }
 
     midiNotes.clear();
     vector<int> toErase;
-    for (auto &e : plate->midiNotes) {
+    for (auto &e : *data) {
         int pitch = e.first;
         ofParameter<bool> *param = e.second.get();
         if (param->get()) {
@@ -299,7 +354,7 @@ void ofApp::createPanel(Plate *plate, bool setPos, bool forPattern) {
     
     for (int pitch : toErase) {
         cout << "erasing " << pitch << endl;
-        plate->midiNotes.erase(pitch);
+        data->erase(pitch);
     }
     
     midiNotesGroup.clear();
@@ -309,6 +364,16 @@ void ofApp::createPanel(Plate *plate, bool setPos, bool forPattern) {
     }
     
     panel.add(&midiNotesGroup);
+    
+    
+    if (currentRenderType == NORMAL) {
+        patternFreqsGroup.clear();
+        for (int i = 0; i < NUM_FIGURES; i++) {
+            patternFreqsGroup.add(*plate->patternFrequencies[i]);
+        }
+        panel.add(&patternFreqsGroup);
+    }
+    
     
     if (setPos) {
         panel.setPosition(ofPoint(mouseX, mouseY));
@@ -327,7 +392,7 @@ void ofApp::valChange(bool &b) {
 //        createPanel(currentPlate, false);
         needsToRedrawPanel = true;
     }
-    cout << "val change " << b << endl;
+//    cout << "val change " << b << endl;
 }
 
 void ofApp::windowResized(int w, int h) {
@@ -346,18 +411,55 @@ void ofApp::dragEvent(ofDragInfo dragInfo) {
 
 void ofApp::newMidiMessage(ofxMidiMessage& msg) {
     stringstream ss;
-    cout << "status: " << msg.status << endl;
-    cout << "channel: " << msg.channel << endl;
-    cout << "pitch: " << msg.pitch << endl;
-    cout << "velocity: " << msg.velocity << endl;
-    cout << endl;
+//    cout << "status: " << msg.status << endl;
+//    cout << "channel: " << msg.channel << endl;
+//    cout << "pitch: " << msg.pitch << endl;
+//    cout << "velocity: " << msg.velocity << endl;
+//    cout << endl;
+//    
     
-    pitches.insert(msg.pitch);
     
-    for (auto p : pitches) {
-        cout << p << ", ";
+    if (currentRenderType == NORMAL) {
+        int index = pianoKeys.keyMap[msg.pitch];
+        
+        if (msg.status == MIDI_NOTE_ON) {
+            pianoKeys.keys[index]->onCol = channels.keys[msg.channel]->onCol;
+            pianoKeys.keys[index]->on = true;
+
+            currentNotesPlaying++;
+            playingPitches[msg.channel][currentNotesPlaying] = msg.pitch;
+                        
+            for (auto &plate : plateManager->plates) {
+                if (plate->channels.count(msg.channel)) {
+                
+                    int pitchToFind = playingPitches[msg.channel][plate->noteOrders[currentNotesPlaying]];
+                    
+                    for (auto &figurePlate : noteToFigureManager->plates) {
+                    
+                        if (figurePlate->midiNotes.count(msg.pitch)) {
+                            cout << "got hit at pitch " << msg.pitch << endl;
+                            plate->patternNum = figurePlate->id;
+                            
+                        }
+                    }
+                }
+            }
+            
+
+            
+
+
+        }
+        else if (msg.status == MIDI_NOTE_OFF) {
+            pianoKeys.keys[index]->onCol = PianoKeys::Key::baseOnCol;
+            pianoKeys.keys[index]->on = false;
+            
+            playingPitches[msg.channel].erase(msg.pitch);
+            
+            currentNotesPlaying--;
+        }
     }
-    cout << endl;
+    
 //    cout << ss;
 }
 
@@ -370,4 +472,9 @@ void ofApp::audioOut(float *output, int bufferSize, int nChannels) {
             output[baseIndex + plate->audioChannel] = plate->play();
         }
     }
+}
+
+void ofApp::saveState() {
+    
+    // to save, midipitches in midi_manager, tracks in normal
 }
