@@ -200,6 +200,9 @@ PlateManager::~PlateManager() {
 }
 
 void PlateManager::setup(int w, int h) {
+    width = w;
+    height = h;
+    
     float pd = plateWidth + platePadding;
     
     plates.clear();
@@ -374,7 +377,7 @@ void PlateManager::saveCurrentConfig() {
         notesXml.addChild("channels");
         notesXml.setTo("channels");
         for (auto q : plate->channels) {
-            notesXml.addValue(q.second->getName(), q.first);
+            notesXml.addValue("channel", q.first);
         }
         pxml.addXml(notesXml);
         
@@ -449,7 +452,8 @@ void PlateManager::loadConfig(string filename) {
                 xml.setToChild(i);
                 xml.setTo("channels");
                 xml.setToChild(j);
-                plate->channels[xml.getIntValue()] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>(xml.getName(), true));
+                int channelNo = xml.getIntValue();
+                plate->channels[channelNo] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>("Channel " + ofToString(channelNo), true));
             }
             
             plates.push_back(plate);

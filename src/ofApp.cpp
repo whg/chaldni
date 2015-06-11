@@ -33,7 +33,7 @@ void ofApp::setup() {
 //    ofSetEscapeQuitsApp(false);
 
     int pianoHeight = 50;
-    pianoKeys = PianoKeys(2, 7, 0, 0, ofGetWidth(), pianoHeight);
+    pianoKeys = PianoKeys(0, 7, 0, 0, ofGetWidth(), pianoHeight);
     channels = Channels(5, 0, pianoHeight);
     
     plateManager = new PlateManager();
@@ -78,10 +78,10 @@ void ofApp::setup() {
     noteToFigureManager->setup(FIGURE_GRID_X, FIGURE_GRID_Y);
     
     
-    currentNotesPlaying = 0;
+
     for (int i = 1; i <= MAX_CHANNELS; i++) {
         playingPitches[i] = map<int,int>();
-
+        currentNotesPlaying[i] = 0;
     }
     
     ofSoundStreamSetup(2, 0, 44100, 512, 2);
@@ -107,6 +107,40 @@ void ofApp::update() {
     
     if (connectMode) cam.disableMouseInput();
     else cam.enableMouseInput();
+ 
+    int k = 0;
+    const int SKIP = 5;
+    int n = ofGetFrameNum() / SKIP;
+    
+    if (mode == HWAVE) {
+        for (int i = 0; i < plateManager->width; i++) {
+            for (int j = 0; j < plateManager->height; j++) {
+                plateManager->plates[k++]->patternNum = (i + n) % NUM_FIGURES;
+            }
+        }
+    }
+    else if (mode == HWAVE) {
+        for (int i = 0; i < plateManager->width; i++) {
+            for (int j = 0; j < plateManager->height; j++) {
+                plateManager->plates[k++]->patternNum = (j + n) % NUM_FIGURES;
+            }
+        }
+    }
+    else if (mode == CWAVE) {
+        float t = ofGetElapsedTimef();
+        for (int i = 0; i < plateManager->width; i++) {
+            for (int j = 0; j < plateManager->height; j++) {
+                plateManager->plates[k++]->patternNum = int((sin(t + i * 0.1) + cos(t + j * 0.1)  + 2) * 0.25 * NUM_FIGURES);// % NUM_FIGURES;
+            }
+        }
+    }
+    else if (mode == RANDOM) {
+        if (n % SKIP == 0) {
+            for (auto &plate : plateManager->plates) {
+                plate->patternNum = int(ofRandom(NUM_FIGURES));
+            }
+        }
+    }
 }
 
 
@@ -182,7 +216,8 @@ void ofApp::keyPressed(int key) {
     KEY(OF_KEY_CONTROL, connectMode = true)
     KEY('`', PlateManager::drawSpecial = true)
 
-
+    KEY(']', awesomeMode())
+    KEY('=', setSize())
 
     if (currentRenderType == MIDI_MANAGER) {
         pm = noteToFigureManager;
@@ -431,13 +466,13 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
         
         if (msg.status == MIDI_NOTE_ON) {
 
-            currentNotesPlaying++;
-            playingPitches[msg.channel][currentNotesPlaying] = msg.pitch;
+            currentNotesPlaying[msg.channel]++;
+            playingPitches[msg.channel][currentNotesPlaying[msg.channel]] = msg.pitch;
                         
             for (auto &plate : plateManager->plates) {
                 if (plate->channels.count(msg.channel)) {
                 
-                    int pitchToFind = playingPitches[msg.channel][plate->noteOrders[currentNotesPlaying]];
+                    int pitchToFind = playingPitches[msg.channel][plate->noteOrders[currentNotesPlaying[msg.channel]]];
                     
                     for (auto &figurePlate : noteToFigureManager->plates) {
                     
@@ -462,15 +497,17 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
                 playingPlates[msg.channel].erase(msg.pitch);
             }
             
-            currentNotesPlaying--;
+            currentNotesPlaying[msg.channel]--;
         }
     }
     
 }
 
 void ofApp::audioOut(float *output, int bufferSize, int nChannels) {
-    vector<shared_ptr<Plate> > plates = pm->plates;
+    vector<shared_ptr<Plate> > &plates = pm->plates;
     static int baseIndex = 0;
+    
+    if (plates.size() > 20) return;
     
     for (int i = 0; i < bufferSize; i++) {
         baseIndex = i * nChannels;
@@ -483,3 +520,47 @@ void ofApp::audioOut(float *output, int bufferSize, int nChannels) {
     }
 }
 
+void ofApp::muteAll() {
+    for (auto &plate : plateManager->plates) {
+        plate->playing = false;
+    }
+}
+
+
+
+void ofApp::setSize() {
+    string s = ofSystemTextBoxDialog("How big shall we go?");
+    
+    int start = 0;
+    for (int i = 0; i < s.length(); i++) {
+        if (s[i] == 'x') {
+            int w = ofToInt(s.substr(0, i));
+            int h = ofToInt(s.substr(i+1, s.length()));
+
+            if (w == 0 || h == 0) {
+                ofLogError() << "bad sizes!!!";
+            }
+            else {
+                plateManager->setup(w, h);
+            }
+        }
+    }
+    
+}
+
+void ofApp::awesomeMode() {
+    string s = ofSystemTextBoxDialog("What would you like to do?");
+    
+    if (s == "hwave") {
+        mode = HWAVE;
+    }
+    else if (s == "vwave") {
+        mode = VWAVE;
+    }
+    else if (s == "cwave") {
+        mode = CWAVE;
+    }
+    else if (s == "random") {
+        mode = RANDOM;
+    }
+}

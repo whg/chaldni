@@ -85,7 +85,7 @@ public:
     static bool drawSpecial;
     
     render_t currentRenderType;
-
+    int width, height;
     
 public:
     PlateManager();

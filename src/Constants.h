@@ -25,5 +25,11 @@ enum render_t {
 };
 
 
-
+enum modes_t {
+    NORMAL_MODE,
+    HWAVE,
+    VWAVE,
+    CWAVE,
+    RANDOM,
+};
 

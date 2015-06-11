@@ -14,6 +14,7 @@
 //static string names[] = { "C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10" };
 static string notes[] = { "C", "Cs", "D", "Ds", "E", "F", "Fs", "G", "Gs", "A", "As", "B" };
 static int noteOrders[12] = { 1, 3, 6, 8, 10, 0, 2, 4, 5, 7, 9, 11, };
+static int drawOrders[12] = { 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, };
 
 class PianoKeys {
 public:
@@ -125,8 +126,10 @@ public:
         ofPushStyle();
         ofSetColor(255);
         ofDrawRectangle(rect);
-        for (auto &key : keys) {
-            key->draw();
+        for (int i = 0; i < keys.size(); i++) {
+//        for (auto &key : keys) {
+            int bi = i / 12;
+            keys[bi * 12 + drawOrders[i%12]]->draw();
         }
         ofPopStyle();
     }
@@ -188,6 +191,16 @@ public:
             keys.push_back(shared_ptr<Key>(new Channel(i+1, i * tw + x, y, tw, h)));
         }
         
+    }
+    
+    void draw() {
+        ofPushStyle();
+        ofSetColor(255);
+        ofDrawRectangle(rect);
+        for (auto &key : keys) {
+            key->draw();
+        }
+        ofPopStyle();
     }
     
 };

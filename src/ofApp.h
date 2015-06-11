@@ -65,14 +65,20 @@ protected:
 protected:
     map<int, ofxMaxiOsc> generators;
     void audioOut(float *output, int bufferSize, int nChannels);
+    void muteAll();
     
 protected:
     PlateManagerMidi *noteToFigureManager;
     
     
 public:
-    int currentNotesPlaying;
+    map<int, int> currentNotesPlaying;
     
     map< int, map<int, int> > playingPitches;
     map< int, map<int, Plate* > > playingPlates;
+    
+protected:
+    void setSize();
+    void awesomeMode();
+    modes_t mode;
 };
