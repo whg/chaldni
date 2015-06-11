@@ -25,8 +25,6 @@ public:
     void mousePressed(int x, int y, int button);
     void mouseReleased(int x, int y, int button);
     void windowResized(int w, int h);
-    void dragEvent(ofDragInfo dragInfo);
-    void gotMessage(ofMessage msg);
     
     ofEasyCam cam;
     
@@ -51,7 +49,6 @@ protected:
     ofxGuiGroup midiNotesGroup;
     vector< shared_ptr<ofxToggle> > midiNotes;
     ofxGuiGroup patternFreqsGroup;
-//    vector< shared_ptr<ofxSlider<<#typename Type#>>> > midiNotes;
     Plate *currentPlate;
     void createPanel(Plate *plate, bool setPos=true, bool forPattern=false);
     bool showPanel;
@@ -72,12 +69,10 @@ protected:
 protected:
     PlateManagerMidi *noteToFigureManager;
     
-protected:
-    void saveState();
     
 public:
     int currentNotesPlaying;
     
     map< int, map<int, int> > playingPitches;
-
+    map< int, map<int, Plate* > > playingPlates;
 };

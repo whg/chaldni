@@ -47,8 +47,9 @@ public:
 public:
     ofxMaxiOsc osc;
     float play();
-    
-    vector<shared_ptr< ofParameter<float> > > patternFrequencies;
+    bool playing;
+
+    vector< ofParameter<float> > patternFrequencies;
     
 public:
     Plate(float x, float y, float w);

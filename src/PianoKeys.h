@@ -13,7 +13,7 @@
 
 //static string names[] = { "C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10" };
 static string notes[] = { "C", "Cs", "D", "Ds", "E", "F", "Fs", "G", "Gs", "A", "As", "B" };
-static int noteOrders[12] = { 0, 2, 4, 5, 7, 9, 11, 1, 3, 6, 8, 10 };
+static int noteOrders[12] = { 1, 3, 6, 8, 10, 0, 2, 4, 5, 7, 9, 11, };
 
 class PianoKeys {
 public:
@@ -88,9 +88,8 @@ public:
             int noteCounter = 0;
             float x = whiteKeyWidth * 7 * n;
             
-            for (int i = 0; i < 7; i++) {
-                keys.push_back(shared_ptr<Key>(new Key(i*whiteKeyWidth + x, 0, whiteKeyWidth, h, startingNote + noteOrders[noteCounter++])));
-            }
+
+            // do sharps first so they are found on mouse hits
             
             float bkw = whiteKeyWidth * 0.5;
             float bkh = h * 0.6;
@@ -102,6 +101,10 @@ public:
             keys.push_back(shared_ptr<Key>(new Key(5*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true)));
             keys.push_back(shared_ptr<Key>(new Key(6*whiteKeyWidth + x - bkw*0.5, 0, bkw, bkh, startingNote + noteOrders[noteCounter++], true)));
             
+            
+            for (int i = 0; i < 7; i++) {
+                keys.push_back(shared_ptr<Key>(new Key(i*whiteKeyWidth + x, 0, whiteKeyWidth, h, startingNote + noteOrders[noteCounter++])));
+            }
             
             startingNote+= 12;
         }

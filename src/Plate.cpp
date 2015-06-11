@@ -95,22 +95,14 @@ Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(fa
     for (int i = 0; i < NUM_FIGURES; i++) {
         CPattern pattern = ChladniDB::patternForNo(i);
         float freq = pattern.data.frequency;
-        patternFrequencies.push_back(shared_ptr<ofParameter<float> >(new ofParameter<float>(ofToString(i), freq, freq-10, freq+10)));
+        patternFrequencies.push_back(ofParameter<float>(ofToString(i), freq, freq-10, freq+10));
     }
-    
+    playing = false;
     
     connecting = false;
 }
 
 Plate::~Plate() {
-//    if (imgMap) {
-//        delete imgMap;
-//        imgMap = NULL;
-//    }
-//    if (font) {
-//        delete font;
-//        font = NULL;
-//    }
 }
 
 void Plate::draw(render_t renderType, int noteOrder) {
@@ -120,7 +112,6 @@ void Plate::draw(render_t renderType, int noteOrder) {
 
     ofPushMatrix();
     ofTranslate(pos);
-//    ofScale(1, -1);
 
     
     if (renderType == PICK) {// || renderType == NORMAL) {
@@ -176,10 +167,11 @@ void Plate::draw(render_t renderType, int noteOrder) {
 
 float Plate::play() {
 
-    patternFrequencies[patternNum];
-//    if (pattern.audioType == SINE) {
-        return osc.sinewave(patternFrequencies[patternNum].get()->get());
-//    }
+    if (playing) {
+        patternFrequencies[patternNum];
+        return osc.sinewave(patternFrequencies[patternNum]) * volume;
+    }
+    
     return 0.0f;
 }
 

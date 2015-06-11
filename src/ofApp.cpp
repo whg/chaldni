@@ -83,9 +83,14 @@ void ofApp::setup() {
         playingPitches[i] = map<int,int>();
 
     }
+    
+    ofSoundStreamSetup(2, 0, 44100, 512, 2);
 }
 
 void ofApp::exit() {
+
+    ofSoundStreamClose();
+
     delete noteToFigureManager;
     delete plateManager;
     
@@ -369,7 +374,7 @@ void ofApp::createPanel(Plate *plate, bool setPos, bool forPattern) {
     if (currentRenderType == NORMAL) {
         patternFreqsGroup.clear();
         for (int i = 0; i < NUM_FIGURES; i++) {
-            patternFreqsGroup.add(*plate->patternFrequencies[i]);
+            patternFreqsGroup.add(plate->patternFrequencies[i]);
         }
         panel.add(&patternFreqsGroup);
     }
@@ -392,22 +397,12 @@ void ofApp::valChange(bool &b) {
 //        createPanel(currentPlate, false);
         needsToRedrawPanel = true;
     }
-//    cout << "val change " << b << endl;
 }
 
 void ofApp::windowResized(int w, int h) {
 
 }
 
-
-void ofApp::gotMessage(ofMessage msg) {
-
-}
-
-
-void ofApp::dragEvent(ofDragInfo dragInfo) { 
-
-}
 
 void ofApp::newMidiMessage(ofxMidiMessage& msg) {
     stringstream ss;
@@ -417,14 +412,24 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
 //    cout << "velocity: " << msg.velocity << endl;
 //    cout << endl;
 //    
-    
+
+
+    int index = pianoKeys.keyMap[msg.pitch];
+
+    if (currentRenderType == NORMAL || currentRenderType == MIDI_MANAGER) {
+        if (msg.status == MIDI_NOTE_ON) {
+            pianoKeys.keys[index]->onCol = channels.keys[msg.channel-1]->onCol;
+            pianoKeys.keys[index]->on = true;
+        }
+        else if (msg.status == MIDI_NOTE_OFF) {
+            pianoKeys.keys[index]->onCol = PianoKeys::Key::baseOnCol;
+            pianoKeys.keys[index]->on = false;
+        }
+    }
     
     if (currentRenderType == NORMAL) {
-        int index = pianoKeys.keyMap[msg.pitch];
         
         if (msg.status == MIDI_NOTE_ON) {
-            pianoKeys.keys[index]->onCol = channels.keys[msg.channel]->onCol;
-            pianoKeys.keys[index]->on = true;
 
             currentNotesPlaying++;
             playingPitches[msg.channel][currentNotesPlaying] = msg.pitch;
@@ -439,42 +444,42 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
                         if (figurePlate->midiNotes.count(msg.pitch)) {
                             cout << "got hit at pitch " << msg.pitch << endl;
                             plate->patternNum = figurePlate->id;
-                            
+                            plate->playing = true;
+                            playingPlates[msg.channel][msg.pitch] = plate.get();
                         }
                     }
                 }
             }
-            
-
-            
-
 
         }
         else if (msg.status == MIDI_NOTE_OFF) {
-            pianoKeys.keys[index]->onCol = PianoKeys::Key::baseOnCol;
-            pianoKeys.keys[index]->on = false;
             
             playingPitches[msg.channel].erase(msg.pitch);
+            
+            if (playingPlates[msg.channel].count(msg.pitch)) {
+            
+                playingPlates[msg.channel][msg.pitch]->playing = false;
+                playingPlates[msg.channel].erase(msg.pitch);
+            }
             
             currentNotesPlaying--;
         }
     }
     
-//    cout << ss;
 }
 
 void ofApp::audioOut(float *output, int bufferSize, int nChannels) {
     vector<shared_ptr<Plate> > plates = pm->plates;
     static int baseIndex = 0;
+    
     for (int i = 0; i < bufferSize; i++) {
         baseIndex = i * nChannels;
+        
         for (auto plate : plates) {
+            if (plate->audioChannel > nChannels) continue;
+            
             output[baseIndex + plate->audioChannel] = plate->play();
         }
     }
 }
 
-void ofApp::saveState() {
-    
-    // to save, midipitches in midi_manager, tracks in normal
-}
