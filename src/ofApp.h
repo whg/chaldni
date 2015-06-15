@@ -3,8 +3,8 @@
 #include "ofMain.h"
 
 #include "ofxMidi.h"
-#include "Plate.h"
 
+#include "PlateManager.h"
 #include "PianoKeys.h"
 
 #include "ofxGui.h"
@@ -52,9 +52,12 @@ protected:
     Plate *currentPlate;
     void createPanel(Plate *plate, bool setPos=true, bool forPattern=false);
     bool showPanel;
-
+    bool noSelectionMode;
+    
     void valChange(bool &b);
     bool needsToRedrawPanel;
+    
+    void reset();
     
 protected:
     bool connectMode, connecting;
@@ -75,10 +78,14 @@ public:
     map<int, int> currentNotesPlaying;
     
     map< int, map<int, int> > playingPitches;
-    map< int, map<int, Plate* > > playingPlates;
+    map< int, map<int, map<int, Plate*> > > playingPlates;
     
 protected:
     void setSize();
     void awesomeMode();
     modes_t mode;
+    
+protected:
+    ofSoundStream soundStream;
+    ofMutex audioMutex;
 };

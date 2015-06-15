@@ -15,17 +15,20 @@
 
 #include "Constants.h"
 
+#define BLEND_FRAMES 30.0
+
 
 class Plate {
 
+    int patternNum, frameNum;
+
+
 public:
-    float fadeInFrames;
     ofVec2f pos;
     float size;
     ofMesh mesh;
     ofShader shader;
     
-    int patternNum, frameNum;
     
     int id;
     ofColor pickColour;
@@ -34,6 +37,8 @@ public:
     int noteOrders[MAX_NOTES+1];
     float tint;
     
+    int getPatternNum() { return patternNum; }
+    void setPatternNum(int n);
     
     ofParameter<int> audioChannel;
     ofParameter<float> volume;
@@ -56,78 +61,11 @@ public:
     ~Plate();
     
     void draw(render_t renderType=NORMAL, int noteOrder=0);
+    
+protected:
+    int lastPatternNum, frameSinceChange;
 };
 
-inline ofColor cidToOfColor(int cid) {
-    return ofColor(cid / 65025, cid / 255, cid % 255);
-}
-
-inline int ofColorToCid(ofColor c) {
-    return c.r * 65025 + c.g * 255 + c.b;
-}
-
-
-class PlateManager {
-    
-public:
-    vector< shared_ptr<Plate> > plates;
-    
-public:
-    float plateWidth, platePadding;
-    ofFbo pickFbo;
-    ofPixels pickPixels;
-    
-    map<int, int> colourMap;
-    Plate *currentPlate;
-    int currentEditingNoteOrder;
-    bool listeningForNote;
-    
-    static bool drawSpecial;
-    
-    render_t currentRenderType;
-    int width, height;
-    
-public:
-    PlateManager();
-    ~PlateManager();
-    
-    virtual void setup(int w, int h);
-    void draw(render_t renderType=NORMAL);
-    virtual void update();
-
-    void initPlates();
-    Plate* getPlateAt(ofEasyCam &cam, int x, int y);
-
-public:
-    void editNoteOrders();
-    ofxPanel savePanel;
-    ofxButton saveButton;
-    ofxGuiGroup savesGroup;
-    vector< shared_ptr<ofxToggle> > savedFiles;
-    void savedFilePressed(bool &b);
-    
-    virtual void saveCurrentConfig();
-    void loadConfig(string filename);
-    
-    void reloadSaves();
-    
-public:
-    virtual void keyPressed(ofKeyEventArgs &args);
-    virtual void keyReleased(ofKeyEventArgs &args);
-    
-};
-
-class PlateManagerMidi : public PlateManager {
-public:
-    void setup(int w, int h);
-    void update();
-    
-    void saveCurrentConfig();
-    void loadConfig();
-    
-    void keyPressed(ofKeyEventArgs &args);
-    void keyReleased(ofKeyEventArgs &args);
-};
 
 void initAssets();
 void delAssets();

@@ -26,6 +26,7 @@ public:
         string name;
         ofColor onCol;
         static ofColor baseOnCol;
+        int channel;
 
         Key() {}
         
@@ -62,7 +63,7 @@ public:
         }
     };
 
-protected:
+public:
     ofRectangle rect;
     
     int nOctaves;
@@ -177,7 +178,7 @@ public:
         Channel(int n, float x, float y, float w, float h): PianoKeys::Key(x, y, w, h, 0) {
             name = "Channel " + ofToString(n);
             number = n;
-            onCol = ofColor::fromHsb(float(n)/6.0 * 255, 120, 255);
+            onCol = ofColor::fromHsb(0.4 * 255 + n * 25, 100, 255);
             on = true;
         }
     };
