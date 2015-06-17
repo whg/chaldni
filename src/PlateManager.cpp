@@ -322,7 +322,7 @@ void PlateManager::loadConfig(string filename) {
             xml.setToChild(i);
             xml.setTo("freqs");
             int nFreqs = xml.getNumChildren();
-            plate->patternFrequencies.clear();
+//            plate->patternFrequencies.clear();
             for (int j = 0; j < nFreqs; j++) {
                 if (j >= NUM_FIGURES) break;
                 xml.setTo("//plates");
@@ -330,7 +330,8 @@ void PlateManager::loadConfig(string filename) {
                 xml.setTo("freqs");
                 xml.setToChild(j);
                 float freq = xml.getFloatValue();
-                plate->patternFrequencies.push_back(ofParameter<float>(ofToString(j), freq, freq-FREQ_ADJUST_AMOUNT, freq+FREQ_ADJUST_AMOUNT));
+                plate->patternFrequencies[j].set(ofToString(j), freq, freq-FREQ_ADJUST_AMOUNT, freq+FREQ_ADJUST_AMOUNT);
+//                plate->patternFrequencies.push_back(ofParameter<float>(ofToString(j), freq, freq-FREQ_ADJUST_AMOUNT, freq+FREQ_ADJUST_AMOUNT));
                 
 //                plate->channels[channelNo] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>("Channel " + ofToString(channelNo), true));
             }
