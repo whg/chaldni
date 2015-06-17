@@ -11,7 +11,7 @@
 #include "PianoKeys.h"
 
 #define NUM_FRAMES 26
-#define NUM_FIGURES 11
+
 
 static ofImage *imgMap = NULL;
 static ofTrueTypeFont *font = NULL;
@@ -108,7 +108,7 @@ Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(fa
     for (int i = 0; i < NUM_FIGURES; i++) {
         CPattern pattern = ChladniDB::patternForNo(i);
         float freq = pattern.data.frequency;
-        patternFrequencies.push_back(ofParameter<float>(ofToString(i), freq, freq-10, freq+10));
+        patternFrequencies.push_back(ofParameter<float>(ofToString(i), freq, freq-FREQ_ADJUST_AMOUNT, freq+FREQ_ADJUST_AMOUNT));
     }
     playing = false;
     
@@ -198,4 +198,6 @@ void Plate::setPatternNum(int n) {
     patternNum = n;
     
     frameSinceChange = 0;
+    
+    playing = true;
 }

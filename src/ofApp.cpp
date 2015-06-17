@@ -90,10 +90,19 @@ void ofApp::setup() {
 //    ofSoundStreamSetup(5, 0, 44100, 512, 2);
 
     soundStream.printDeviceList();
-    soundStream.setDeviceID(2);
+    soundStream.setDeviceID(1);
     
-    soundStream.setup(this, 6, 0, 44100, 512, 2);
+    soundStream.setup(this, 2, 0, 44100, 512, 2);
+    
+    
+//    plateManager->setup(10, 10);
+//    initSnake();
+//    mode = SNAKE;
 
+//    tempPanel.setup("tempPanel");
+//    tempPanel.add(spacing.set("spacing", 10, 0, 100));
+//    
+//    loadImage();
 }
 
 void ofApp::exit() {
@@ -118,42 +127,64 @@ void ofApp::update() {
 
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
     
+//    plateManager->platePadding = spacing;
+//    plateManager->setPositions();
+    
     if (connectMode) cam.disableMouseInput();
     else cam.enableMouseInput();
  
     int k = 0;
-    const int SKIP = 10;
+    const int SKIP = 40;
     int n = ofGetFrameNum() / SKIP;
+    static float tt = 0;
     
-    if (mode == HWAVE) {
-        for (int i = 0; i < plateManager->width; i++) {
-            for (int j = 0; j < plateManager->height; j++) {
-                plateManager->plates[k++]->setPatternNum((i + n) % NUM_FIGURES);
-            }
-        }
-    }
-    else if (mode == VWAVE) {
-        for (int i = 0; i < plateManager->width; i++) {
-            for (int j = 0; j < plateManager->height; j++) {
-                plateManager->plates[k++]->setPatternNum((j + n) % NUM_FIGURES);
-            }
-        }
-    }
-    else if (mode == CWAVE) {
-        float t = ofGetElapsedTimef();
-        for (int i = 0; i < plateManager->width; i++) {
-            for (int j = 0; j < plateManager->height; j++) {
-                plateManager->plates[k++]->setPatternNum(int((sin(t + i * 0.1) + cos(t + j * 0.1)  + 2) * 0.25 * NUM_FIGURES));// % NUM_FIGURES;
-            }
-        }
-    }
-    else if (mode == RANDOM) {
-        if (n % SKIP == 0) {
-            for (auto &plate : plateManager->plates) {
-                plate->setPatternNum(int(ofRandom(NUM_FIGURES)));
-            }
-        }
-    }
+//    if (mode == HWAVE) {
+//        if (ofGetFrameNum() % SKIP) return;
+//        for (int i = 0; i < plateManager->width; i++) {
+//            for (int j = 0; j < plateManager->height; j++) {
+//                plateManager->plates[k++]->setPatternNum((i + n) % NUM_FIGURES);
+//            }
+//        }
+//    }
+//    else if (mode == VWAVE) {
+//        if (ofGetFrameNum() % SKIP) return;
+//        for (int i = 0; i < plateManager->width; i++) {
+//            for (int j = 0; j < plateManager->height; j++) {
+//                plateManager->plates[k++]->setPatternNum((j + n) % NUM_FIGURES);
+//            }
+//        }
+//    }
+//    else if (mode == CWAVE) {
+//        float t = ofGetElapsedTimef();
+//        if (ofGetFrameNum() % SKIP) return;
+//        tt+= 0.1;
+//        t = tt;
+//        for (int i = 0; i < plateManager->width; i++) {
+//            for (int j = 0; j < plateManager->height; j++) {
+//                plateManager->plates[k++]->setPatternNum(int((sin(t + i * 0.1) + cos(t + j * 0.1)  + 2) * 0.25 * NUM_FIGURES));// % NUM_FIGURES;
+//            }
+//        }
+//    }
+//    else if (mode == RANDOM) {
+//        if (n % SKIP == 0) {
+//            for (auto &plate : plateManager->plates) {
+//                plate->setPatternNum(int(ofRandom(NUM_FIGURES)));
+//            }
+//        }
+//    }
+//    else if (mode == SNAKE) {
+//        if (ofGetFrameNum() % 5 == 0) {
+//            snake();
+//        }
+//    }
+//    else if (mode == HSWEEP) {
+//        if (ofGetFrameNum() % SKIP) return;
+//        for (int i = 0; i < plateManager->width; i++) {
+//            for (int j = 0; j < plateManager->height; j++) {
+//                plateManager->plates[k++]->setPatternNum((i + n) % NUM_FIGURES);
+//            }
+//        }
+//    }
 }
 
 
@@ -207,6 +238,8 @@ void ofApp::draw() {
     
     ofSetColor(255);
     ofDrawBitmapString(ofToString(currentRenderType), 10, ofGetHeight()- 10);
+    
+    tempPanel.draw();
 //    panel.draw();
 
 //    ofTranslate(mouseX, mouseY);
@@ -555,7 +588,7 @@ void ofApp::audioOut(float *output, int bufferSize, int nChannels) {
     
     ofScopedLock lock(audioMutex);
 
-    vector<shared_ptr<Plate> > &plates = pm->plates;
+    vector<shared_ptr<Plate> > &plates = plateManager->plates;
     static int baseIndex = 0;
     
     if (plates.size() > 20) return;
@@ -575,6 +608,8 @@ void ofApp::muteAll() {
     for (auto &plate : plateManager->plates) {
         plate->playing = false;
     }
+    playingPlates.clear();
+    playingPitches.clear();
 }
 
 
@@ -611,6 +646,7 @@ void ofApp::awesomeMode() {
     
     if (s == "") {
         mode = NORMAL_MODE;
+        muteAll();
     }
     else if (s == "hwave") {
         mode = HWAVE;
@@ -642,4 +678,101 @@ void ofApp::awesomeMode() {
             plateManager->plates[4]->pos.y = plateManager->plates[2]->pos.y;
         }
     }
+    else if (s == "snake") {
+        initSnake();
+        mode = SNAKE;
+    }
+    
+}
+
+void ofApp::initSnake() {
+    snakeData.clear();
+    
+    for (int i = 0; i < 5; i++) {
+        snakeData.push_back(ofVec2f(7-i, 2));
+    }
+    
+//    for (auto &plate : plateManager->plates) {
+//        snakeData.push_back(false);
+//    }
+}
+
+void ofApp::snake() {
+    
+    int w = plateManager->width;
+    int h = plateManager->height;
+    
+    auto &plates = plateManager->plates;
+    
+    for (auto &plate : plateManager->plates) {
+        plate->setPatternNum(1); //off
+    }
+    
+    size_t s = snakeData.size();
+    ofVec2f dir = snakeData[0] - snakeData[1];
+    
+    float r = ofRandom(1);
+    float t = 0.18;
+    if (r < t) {
+        dir.rotate(90);
+    }
+    else if (r < t*2) {
+        dir.rotate(-90);
+    }
+    
+//    ofVec2f np = snakeData[0] + dir;
+    snakeData.push_front(snakeData[0] + dir);
+    
+    snakeData.pop_back();
+    
+    for (ofVec2f p : snakeData) {
+        while (p.x < 0) p.x+= w;
+        while (p.y < 0) p.y+= h;
+        
+        int k = int(p.x) % w + w * (int(p.y) % h);
+        plateManager->plates[k]->setPatternNum(9);
+        plateManager->plates[k]->setPatternNum(9);
+    }
+    
+    
+}
+
+void ofApp::loadImage() {
+    ofImage img;
+    img.load("/Users/whg/Desktop/original1.jpg");
+    
+//    plateManager->plates.clear();
+    int w = plateManager->plateWidth;
+    int g = plateManager->getPlateGap();
+    ofPixelsRef pr = img.getPixels();
+    plateManager->setup(img.width, img.height);
+    
+    int k = 0;
+    for (int i = 0; i < img.height; i++) {
+        for (int j = 0; j < img.width; j++) {
+            shared_ptr<Plate> &p = plateManager->plates[k++]; //shared_ptr<Plate>(new Plate(i*g, j*g, w));
+//            p->pos.x = 0;//i*g;
+//            p->pos.y = 1;//j*g;
+//            cout << pr.getColor(i, j).getBrightness() << endl;
+            if (pr.getColor(j, i).getBrightness() > 128) {
+                p->setPatternNum(5);
+                p->setPatternNum(5);
+//                cout << "a" << endl;
+            }
+            else {
+                p->setPatternNum(0);
+                p->setPatternNum(0);
+//                cout << "b" << endl;
+            }
+//            plateManager->plates.push_back(p);
+        }
+    }
+}
+
+void ofApp::blankAll() {
+
+    for (auto &p : plateManager->plates) {
+        
+    }
+            //
 }

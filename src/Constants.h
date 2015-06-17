@@ -10,7 +10,7 @@
 
 #define MAX_NOTES 9
 
-#define NUM_FIGURES 11
+#define NUM_FIGURES 14
 #define FIGURE_GRID_X 5
 #define FIGURE_GRID_Y 4
 
@@ -31,5 +31,7 @@ enum modes_t {
     VWAVE,
     CWAVE,
     RANDOM,
+    SNAKE,
+    HSWEEP,
 };
 

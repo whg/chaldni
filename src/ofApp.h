@@ -88,4 +88,16 @@ protected:
 protected:
     ofSoundStream soundStream;
     ofMutex audioMutex;
+    
+protected:
+    deque<ofVec2f> snakeData;
+    void initSnake();
+    void snake();
+    
+    
+    ofxPanel tempPanel;
+    ofParameter<float> spacing;
+    
+    void loadImage();
+    void blankAll();
 };

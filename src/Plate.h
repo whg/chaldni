@@ -16,7 +16,7 @@
 #include "Constants.h"
 
 #define BLEND_FRAMES 30.0
-
+#define FREQ_ADJUST_AMOUNT 50
 
 class Plate {
 

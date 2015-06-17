@@ -72,6 +72,9 @@ public:
     virtual void keyPressed(ofKeyEventArgs &args);
     virtual void keyReleased(ofKeyEventArgs &args);
     
+    
+    void setPositions();
+    
 };
 
 class PlateManagerMidi : public PlateManager {
