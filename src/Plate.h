@@ -46,7 +46,7 @@ public:
     map<int, shared_ptr< ofParameter<bool> > > midiNotes;
     map<int, shared_ptr< ofParameter<bool> > > channels;
     
-    bool connecting;
+    bool connecting, border;
     
     
 public:

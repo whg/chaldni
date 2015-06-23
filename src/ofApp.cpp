@@ -123,9 +123,9 @@ void ofApp::resetView() {
 
 void ofApp::update() {
 
-    ofScopedLock lock(audioMutex);
+//    ofScopedLock lock(audioMutex);
 
-    ofSetWindowTitle(ofToString(ofGetFrameRate()));
+//    ofSetWindowTitle(ofToString(ofGetFrameRate()));
     
 //    plateManager->platePadding = spacing;
 //    plateManager->setPositions();
@@ -339,6 +339,17 @@ void ofApp::mousePressed(int x, int y, int button) {
             
         }
         
+        if (currentRenderType == MIDI_MANAGER) {
+            if (pianoKeys.findKey(x, y)) {
+                for (auto plate : noteToFigureManager->plates) {
+                    for (auto note : plate->midiNotes) {
+                        if (note.first == pianoKeys.foundKey->pitch) {
+                            plate->border = true;
+                        }
+                    }
+                }
+            }
+        }   
     }
     
     if (connectMode) {
@@ -388,6 +399,13 @@ void ofApp::mouseReleased(int x, int y, int button) {
         connecting = false;
         connectedPlate = NULL;
     }
+    
+    for (auto plate : noteToFigureManager->plates) {
+        for (auto note : plate->midiNotes) {
+            plate->border = false;
+        }
+    }
+
     
     
 }
@@ -755,8 +773,8 @@ void ofApp::loadImage() {
 //            p->pos.y = 1;//j*g;
 //            cout << pr.getColor(i, j).getBrightness() << endl;
             if (pr.getColor(j, i).getBrightness() > 128) {
-                p->setPatternNum(5);
-                p->setPatternNum(5);
+                p->setPatternNum(12);
+                p->setPatternNum(12);
 //                cout << "a" << endl;
             }
             else {

@@ -10,7 +10,7 @@
 #include "ChladniDB.h"
 #include "PianoKeys.h"
 
-#define NUM_FRAMES 26
+#define NUM_FRAMES 1
 
 
 static ofImage *imgMap = NULL;
@@ -29,7 +29,8 @@ void initAssets() {
     
     if (!imgMap) {
         imgMap = new ofImage();
-        imgMap->load("m256-500.png");
+//        imgMap->load("m256-500.png");
+        imgMap->load("singles2.png");
     }
 }
 
@@ -74,7 +75,7 @@ Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(fa
                           uniform sampler2DRect tex;
                           uniform vec2 size = vec2(256.0);
                           
-                          vec2 dim = vec2(26.0, 11.0);
+                          vec2 dim = vec2(1.0, 14.0);
                           
                           uniform float blend = 1.0;
                           
@@ -113,6 +114,7 @@ Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(fa
     playing = false;
     
     connecting = false;
+    border = false;
 }
 
 Plate::~Plate() {
@@ -173,6 +175,11 @@ void Plate::draw(render_t renderType, int noteOrder) {
         if (connecting) {
             ofSetColor(100, 255, 160, 150);
             mesh.draw(OF_MESH_FILL);
+        }
+        
+        if (border) {
+            ofSetColor(255, 255, 0);
+            mesh.drawWireframe();
         }
     }
     
