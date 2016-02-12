@@ -75,6 +75,10 @@ public:
     
     void setPositions();
     
+public:
+    vector<float> colourCache;
+    int lastChangedNumber;
+    char lastChangedChannel;
 };
 
 class PlateManagerMidi : public PlateManager {

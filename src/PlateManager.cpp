@@ -13,7 +13,7 @@
 #pragma mark PlateManager
 
 //////////////////////////////////////////////////////////////////////////////////////////
-#define SAVE_DIRECTORY "plateConfigs/"
+#define SAVE_DIRECTORY ""
 
 PlateManager::PlateManager(): plateWidth(128), platePadding(10) {
     ofRegisterKeyEvents(this);
@@ -37,20 +37,26 @@ void PlateManager::setup(int w, int h) {
     height = h;
     
     float pd = getPlateGap();
+//    float pd
     
     plates.clear();
     
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
-            float x = j * pd - (w * 0.5 * pd) + plateWidth * 0.5;
-            float y = i * pd - (h * 0.5 * pd) + plateWidth * 0.5;
-            plates.push_back(shared_ptr<Plate>(new Plate(x, y, plateWidth)));
+            
+            float x = j * (plateWidth + platePadding) - (w * 0.5 * pd) + plateWidth * 0.5;
+            float y = i * (plateWidth * 0.5 + platePadding) - (h * 0.5 * (plateWidth * 0.5 + platePadding)) + plateWidth * 0.25;
+            plates.push_back(shared_ptr<Plate>(new Plate(x, y, plateWidth, plateWidth*0.5)));
         }
     }
     
     int counter = 0;
     for (auto p : plates) {
         p->id = counter++;
+        
+        for (int i = 0; i < 4; i++) {
+            colourCache.push_back(0);
+        }
     }
     
     initPlates();
@@ -93,7 +99,35 @@ void PlateManager::initBuffers(int w, int h) {
 }
 
 void PlateManager::update() {
+
+    int i  = 0;
+    for (auto &plate : plates) {
+        if (plate->dmxColour->r != colourCache[i++]) {
+            lastChangedNumber = (i-1)/4;
+            lastChangedChannel = 'r';
+        }
+        if (plate->dmxColour->g != colourCache[i++]) {
+            lastChangedNumber = (i-1)/4;
+            lastChangedChannel = 'g';
+        }
+        if (plate->dmxColour->b != colourCache[i++]) {
+            lastChangedNumber = (i-1)/4;
+            lastChangedChannel = 'b';
+        }
+        if (plate->dmxColour->a != colourCache[i++]) {
+            lastChangedNumber = (i-1)/4;
+            lastChangedChannel = 'a';
+        }
+    }
     
+    
+    i = 0;
+    for (auto &plate : plates) {
+        colourCache[i++] = plate->dmxColour->r;
+        colourCache[i++] = plate->dmxColour->g;
+        colourCache[i++] = plate->dmxColour->b;
+        colourCache[i++] = plate->dmxColour->a;
+    }
 }
 
 void PlateManager::draw(render_t renderType) {
@@ -152,7 +186,7 @@ void PlateManager::editNoteOrders() {
             
             if (!doneLabel && i == currentEditingNoteOrder) {
                 ofSetColor(255);
-                ofDrawBitmapString("Editing Layer " + ofToString(currentEditingNoteOrder), p->pos - ofVec2f(p->size, p->size+20));
+                ofDrawBitmapString("Editing Layer " + ofToString(currentEditingNoteOrder), p->pos);
                 doneLabel = true;
             }
         }
@@ -212,19 +246,13 @@ void PlateManager::saveCurrentConfig(string filename) {
         pxml.addValue("id", plate->id);
         pxml.addValue("x", plate->pos.x);
         pxml.addValue("y", plate->pos.y);
-        pxml.addValue("size", plate->size);
-        pxml.addValue("volume", plate->volume);
-        pxml.addValue("audioChannel", plate->audioChannel);
+        pxml.addValue("width", plate->size.x);
+        pxml.addValue("height", plate->size.y);
         
-        ofXml ordersXml;
-        ordersXml.addChild("orders");
-        ordersXml.setTo("orders");
-        for (int i = 0; i < MAX_NOTES; i++) {
-            ordersXml.addValue("o" + ofToString(i), plate->noteOrders[i]);
-        }
-        pxml.addXml(ordersXml);
+        pxml.addValue("fadeIn", plate->fadeIn);
+        pxml.addValue("fadeOut", plate->fadeOut);
         
-        
+
         ofXml notesXml;
         notesXml.addChild("channels");
         notesXml.setTo("channels");
@@ -233,14 +261,17 @@ void PlateManager::saveCurrentConfig(string filename) {
         }
         pxml.addXml(notesXml);
         
-        ofXml freqAdjust;
-        freqAdjust.addChild("freqs");
-        freqAdjust.setTo("freqs");
-        for (auto f : plate->patternFrequencies) {
-            freqAdjust.addValue("freq", f);
-        }
-        pxml.addXml(freqAdjust);
-
+        ofXml colXml;
+        colXml.addChild("colour");
+        colXml.setTo("colour");
+        colXml.addValue("r", ofToString(int(plate->dmxColour->r)));
+        colXml.addValue("g", ofToString(int(plate->dmxColour->g)));
+        colXml.addValue("b", ofToString(int(plate->dmxColour->b)));
+        
+        
+        
+        pxml.addXml(colXml);
+        
         
         xml.addXml(pxml);
         
@@ -285,24 +316,21 @@ void PlateManager::loadConfig(string filename) {
             xml.setToChild(i);
             float x = xml.getFloatValue("x");
             float y = xml.getFloatValue("y");
-            float size = xml.getFloatValue("size");
+            float width = xml.getFloatValue("width");
+            float height = xml.getFloatValue("height");
             int id = xml.getIntValue("id");
             
-            shared_ptr<Plate> plate = shared_ptr<Plate>(new Plate(x, y, size));
+            
+            
+            shared_ptr<Plate> plate = shared_ptr<Plate>(new Plate(x, y, width, height));
             plate->id = id;
             
             int audioChannel = xml.getIntValue("audioChannel");
             float volume = xml.getFloatValue("volume");
-            plate->audioChannel = audioChannel;
-            plate->volume = volume;
+
+            plate->fadeIn.set(xml.getFloatValue("fadeIn"));
+            plate->fadeOut.set(xml.getFloatValue("fadeOut"));
             
-            for (int j = 0; j < MAX_NOTES; j++) {
-                xml.setTo("//plates");
-                xml.setToChild(i);
-                xml.setTo("orders");
-                xml.setToChild(j);
-                plate->noteOrders[j] = xml.getIntValue();
-            }
             
             xml.setTo("//plates");
             xml.setToChild(i);
@@ -320,20 +348,8 @@ void PlateManager::loadConfig(string filename) {
 //            
             xml.setTo("//plates");
             xml.setToChild(i);
-            xml.setTo("freqs");
-            int nFreqs = xml.getNumChildren();
-            plate->patternFrequencies.clear();
-            for (int j = 0; j < nFreqs; j++) {
-                if (j >= NUM_FIGURES) break;
-                xml.setTo("//plates");
-                xml.setToChild(i);
-                xml.setTo("freqs");
-                xml.setToChild(j);
-                float freq = xml.getFloatValue();
-                plate->patternFrequencies.push_back(ofParameter<float>(ofToString(j), freq, freq-FREQ_ADJUST_AMOUNT, freq+FREQ_ADJUST_AMOUNT));
-                
-//                plate->channels[channelNo] = shared_ptr<ofParameter<bool> >(new ofParameter<bool>("Channel " + ofToString(channelNo), true));
-            }
+            xml.setTo("colour");
+            plate->dmxColour.set(ofColor(xml.getIntValue("r"), xml.getIntValue("g"), xml.getIntValue("b")));
             
             plates.push_back(plate);
         }
@@ -343,7 +359,6 @@ void PlateManager::loadConfig(string filename) {
     initPlates();
     
     ofLogNotice() << "loaded from " << filename;
-    
     
     for (auto &toggle : savedFiles) {
         ofParameter<bool> *p = (ofParameter<bool>*) &toggle->getParameter();

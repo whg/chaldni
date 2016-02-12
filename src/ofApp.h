@@ -11,8 +11,11 @@
 #include "ofxMaxim.h"
 #include "Constants.h"
 
+#include "ofxDmx.h"
+
 class ofApp : public ofBaseApp, public ofxMidiListener {
 public:
+    ofApp();
     void setup();
     void exit();
     void update();
@@ -68,7 +71,6 @@ protected:
 protected:
     map<int, ofxMaxiOsc> generators;
     void audioOut(float *output, int bufferSize, int nChannels);
-    void muteAll();
     
 protected:
     PlateManagerMidi *noteToFigureManager;
@@ -78,11 +80,11 @@ public:
     map<int, int> currentNotesPlaying;
     
     map< int, map<int, int> > playingPitches;
-    map< int, map<int, map<int, Plate*> > > playingPlates;
+    map< int, map<int, vector<Plate*> > > playingPlates;
+    
+    map< int, pair<Plate*, char> > controlsToParameter;
     
 protected:
-    void setSize();
-    void awesomeMode();
     modes_t mode;
     
 protected:
@@ -90,14 +92,12 @@ protected:
     ofMutex audioMutex;
     
 protected:
-    deque<ofVec2f> snakeData;
-    void initSnake();
-    void snake();
-    
-    
-    ofxPanel tempPanel;
-    ofParameter<float> spacing;
-    
-    void loadImage();
     void blankAll();
+    
+    
+public:
+    ofxDmx dmx;
+    string dmxDevice;
+    
+    ofMutex midiLock;
 };

@@ -10,7 +10,7 @@
 #include "ChladniDB.h"
 #include "PianoKeys.h"
 
-#define NUM_FRAMES 1
+#define NUM_FRAMES 26
 
 
 static ofImage *imgMap = NULL;
@@ -24,13 +24,13 @@ void initAssets() {
     if (!font) {
         cout << "loading font, font = " << font << endl;
         font = new ofTrueTypeFont();
-        font->load("/Library/Fonts/Arial.ttf", 48, false, true, true);
+        font->load("/Library/Fonts/Verdana.ttf", 24, false, true, true);
     }
     
     if (!imgMap) {
         imgMap = new ofImage();
-//        imgMap->load("m256-500.png");
-        imgMap->load("singles2.png");
+//        imgMap->load("m256-500-blank.png");
+//        imgMap->load("singles2.png");
     }
 }
 
@@ -39,64 +39,14 @@ void delAssets() {
     delete imgMap;
 }
 
-Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(false), tint(false) {
+Plate::Plate(float x, float y, float w, float h): pos(x, y), size(w, h), listeningForNote(false), tint(false) {
     
-    mesh = ofMesh::plane(w, w);
+    mesh = ofMesh::plane(w, h);
     
     patternNum = 0;
     setPatternNum(0);
     frameNum = 0;
 
-    /////////////////////////////////////////////////////////
-    // vertex shader
-    
-    string vert = GLSL120(
-                          
-                          void main() {
-                              
-                              gl_Position = ftransform();
-                              
-                              gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
-                              
-                          }
-                          );
-    
-    shader.setupShaderFromSource(GL_VERTEX_SHADER, vert);
-    
-    /////////////////////////////////////////////////////////
-    // fragment shader
-    
-    string frag = GLSL120(
-                          varying vec2 texc;
-                          
-                          uniform int lastFigure;
-                          uniform int figure;
-                          uniform int frame;
-                          uniform sampler2DRect tex;
-                          uniform vec2 size = vec2(256.0);
-                          
-                          vec2 dim = vec2(1.0, 14.0);
-                          
-                          uniform float blend = 1.0;
-                          
-                          void main() {
-                              
-                              vec2 t = gl_TexCoord[0].xy / dim;
-                          
-                              vec2 p = vec2(t.x + float(frame) * size.x,
-                                            t.y + float(figure) * size.y);
-                              vec4 c = texture2DRect(tex, p);
-                              
-                              p.y = t.y + float(lastFigure) * size.y;
-                              vec4 oc = texture2DRect(tex, p);
-                              
-                              gl_FragColor = c * (blend) + oc * (1.0 - blend); //vec4(texc.x, texc.y, 1.0, 1.0); //c; //vec4(1.0, 0.0, 1.0, 1.0);
-                              
-                          }
-                          );
-    
-    shader.setupShaderFromSource(GL_FRAGMENT_SHADER, frag);
-    shader.linkProgram();
     
     for (int i = 1; i <= MAX_NOTES; i++) {
         noteOrders[i] = i;
@@ -111,13 +61,52 @@ Plate::Plate(float x, float y, float w): pos(x, y), size(w), listeningForNote(fa
         float freq = pattern.data.frequency;
         patternFrequencies.push_back(ofParameter<float>(ofToString(i), freq, freq-FREQ_ADJUST_AMOUNT, freq+FREQ_ADJUST_AMOUNT));
     }
-    playing = false;
+    
+    playing.set("on", false);
     
     connecting = false;
     border = false;
+    
+    dmxColour.set("colour", 0, ofColor(0,0),255);
+    fadeIn.set("Fade in", 0.5, 0, 2.5);
+    fadeOut.set("Fade out", 0.5, 0, 2.5);
+    value = 0.0f;
+    lastFrameTime = 0;
+    turnedOnAt = 0;
+    turnedOffAt = 0;
+    valueAtOff = 0;
+    
+    dmxColour.addListener(this, &Plate::dmxColourChangedBefore);
+//    dmxColour.addListener(this, &Plate::dmxColourChangedAfter);
 }
 
 Plate::~Plate() {
+}
+
+void Plate::update() {
+    
+    float now = ofGetElapsedTimef();
+    float timedelta =  - lastFrameTime;
+    
+    float a = ofMap(dmxColour->a, 0, 255, 0, 1);
+    if (!playing) {
+        
+//        if (fadeOut < 0.0001) {
+//            value = 0;
+//        }
+//        else {
+            value = valueAtOff * (1.0 - MIN(1.0, (now - turnedOffAt) / fadeOut)) * a;
+//          }
+        
+    }
+    else {
+        
+        value = MIN(1.0, (now - turnedOnAt) / fadeIn) * a;
+    }
+    
+
+    
+    lastFrameTime = ofGetElapsedTimef();
 }
 
 void Plate::draw(render_t renderType, int noteOrder) {
@@ -133,56 +122,36 @@ void Plate::draw(render_t renderType, int noteOrder) {
         
         ofSetColor(pickColour);
         mesh.draw(OF_MESH_FILL);
+        ofPopMatrix();
         
     }
-    else if (renderType == NOTE_SELECT) {
+    else if (renderType == NORMAL) {
 
-        ofColor c(255, listeningForNote ? 0 : 255, listeningForNote ? 100 : 255);
-        c*= tint;
-        ofSetColor(c);
-        mesh.draw(OF_MESH_FILL);
-        ofSetColor(0);
+        if (value < 0.00001) ofSetColor(200);
+        else ofSetColor(dmxColour.get() * value);
         
-        string sid = ofToString(noteOrders[noteOrder]);
+        mesh.draw(OF_MESH_FILL);
+        ofSetColor(255);
+        
+        string sid = ofToString(id + 1);
         ofRectangle r = font->getStringBoundingBox(sid, 0, 0);
         font->drawStringAsShapes(sid, r.getWidth() * -0.5, r.getHeight() * -0.5);
 
-        
-    }
-    else if (renderType == NORMAL || renderType == MIDI_MANAGER) {
-    
-        imgMap->getTexture().bind();
-        
-//        if (ofRandom(0, 1) < 0.5) {
-            frameNum++;
-//            if (frameNum > NUM_FRAMES) 
-            frameNum%= (NUM_FRAMES * 2);
-//        }
-        
-        shader.begin();
-        shader.setUniform1i("figure", patternNum);
-        shader.setUniform1i("lastFigure", lastPatternNum);
-        shader.setUniform1i("frame", (frameNum < NUM_FRAMES) ? frameNum : 2*NUM_FRAMES-frameNum-1);
-        shader.setUniformTexture("tex", *imgMap, 0);
-        
-        shader.setUniform1f("blend", MIN(1.0, (frameSinceChange++ / BLEND_FRAMES)));
-        
-        mesh.draw(OF_MESH_FILL);
-        
-        shader.end();
-        imgMap->getTexture().unbind();
-        
+
         if (connecting) {
-            ofSetColor(100, 255, 160, 150);
+            ofSetColor(100, 255, 160, 200);
             mesh.draw(OF_MESH_FILL);
         }
+        
         
         if (border) {
             ofSetColor(255, 255, 0);
             mesh.drawWireframe();
         }
+        
+        
     }
-    
+
     
     
     ofPopMatrix();
@@ -191,12 +160,16 @@ void Plate::draw(render_t renderType, int noteOrder) {
 
 float Plate::play() {
 
-    if (playing) {
-        patternFrequencies[patternNum];
-        return osc.sinewave(patternFrequencies[patternNum]);
-    }
+    turnedOnAt = ofGetElapsedTimef();
+    playing = true;
     
     return 0.0f;
+}
+
+void Plate::stop() {
+    playing = false;
+    turnedOffAt = ofGetElapsedTimef();
+    valueAtOff = value;
 }
 
 void Plate::setPatternNum(int n) {

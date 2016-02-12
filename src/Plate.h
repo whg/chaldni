@@ -25,7 +25,7 @@ class Plate {
 
 public:
     ofVec2f pos;
-    float size;
+    ofVec2f size;
     ofMesh mesh;
     ofShader shader;
     
@@ -48,19 +48,37 @@ public:
     
     bool connecting, border;
     
+    ofParameter<ofColor> dmxColour;
+    ofParameter<float> fadeIn, fadeOut;
+    float value;
+    
+    float lastFrameTime;
+    float turnedOnAt, turnedOffAt;
+    float valueAtOff;
+    
+    void dmxColourChangedBefore(ofColor &c) {
+        cout << "dmx col b4" << endl;
+    }
+    
+    void dmxColourChangedAfter(ofColor &c) {
+        cout << "dmx col after" << endl;
+    }
+
     
 public:
     ofxMaxiOsc osc;
     float play();
-    bool playing;
+    void stop();
+    ofParameter<bool> playing;
 
     vector< ofParameter<float> > patternFrequencies;
     
 public:
-    Plate(float x, float y, float w);
+    Plate(float x, float y, float w, float h);
     ~Plate();
     
     void draw(render_t renderType=NORMAL, int noteOrder=0);
+    void update();
     
 protected:
     int lastPatternNum, frameSinceChange;

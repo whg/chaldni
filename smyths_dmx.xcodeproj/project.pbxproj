@@ -53,6 +53,7 @@
 		EE6381DB1B25D805000EAECE /* ofxMidiMessage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EE6381C71B25D805000EAECE /* ofxMidiMessage.cpp */; };
 		EE6381DC1B25D805000EAECE /* ofxMidiOut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EE6381C91B25D805000EAECE /* ofxMidiOut.cpp */; };
 		EE6381DF1B25DE3F000EAECE /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE6381DE1B25DE3F000EAECE /* CoreMIDI.framework */; };
+		EE984DE41B429ADA00DECE8F /* ofxDmx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EE984DDC1B429ADA00DECE8F /* ofxDmx.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,7 +97,7 @@
 		E45BE9770E8CC7DD009D7055 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
 		E45BE9790E8CC7DD009D7055 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		E45BE97A0E8CC7DD009D7055 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = /System/Library/Frameworks/QuickTime.framework; sourceTree = "<absolute>"; };
-		E4B69B5B0A3A1756003C02F2 /* Super WobblerDebug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Super WobblerDebug.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E4B69B5B0A3A1756003C02F2 /* Smyths DMXDebug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Smyths DMXDebug.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E4B69E1D0A3A1BDC003C02F2 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = src/main.cpp; sourceTree = SOURCE_ROOT; };
 		E4B69E1E0A3A1BDC003C02F2 /* ofApp.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; lineEnding = 0; name = ofApp.cpp; path = src/ofApp.cpp; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E4B69E1F0A3A1BDC003C02F2 /* ofApp.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = ofApp.h; path = src/ofApp.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -172,6 +173,9 @@
 		EE6381CB1B25D805000EAECE /* ofxMidiTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxMidiTypes.h; sourceTree = "<group>"; };
 		EE6381DE1B25DE3F000EAECE /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
 		EE849DF41B271613001AEA80 /* ofxTools.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofxTools.h; sourceTree = "<group>"; };
+		EE984DBA1B429AD900DECE8F /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		EE984DDC1B429ADA00DECE8F /* ofxDmx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxDmx.cpp; sourceTree = "<group>"; };
+		EE984DDD1B429ADA00DECE8F /* ofxDmx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxDmx.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -205,6 +209,7 @@
 		BB4B014C10F69532006C3DED /* addons */ = {
 			isa = PBXGroup;
 			children = (
+				EE984DB91B429AD900DECE8F /* ofxDmx */,
 				EE3D32D81B283D38001EB016 /* ofxMaxim */,
 				EE31E3261B25E98800243CFF /* ofxGui */,
 				EE6381DD1B25D809000EAECE /* ofxMidi */,
@@ -268,7 +273,7 @@
 				E4EEC9E9138DF44700A80321 /* openFrameworks */,
 				BB4B014C10F69532006C3DED /* addons */,
 				E45BE5980E8CC70C009D7055 /* frameworks */,
-				E4B69B5B0A3A1756003C02F2 /* Super WobblerDebug.app */,
+				E4B69B5B0A3A1756003C02F2 /* Smyths DMXDebug.app */,
 			);
 			sourceTree = "<group>";
 		};
@@ -434,12 +439,31 @@
 			name = ofxMidi;
 			sourceTree = "<group>";
 		};
+		EE984DB91B429AD900DECE8F /* ofxDmx */ = {
+			isa = PBXGroup;
+			children = (
+				EE984DBA1B429AD900DECE8F /* .gitignore */,
+				EE984DDB1B429ADA00DECE8F /* src */,
+			);
+			name = ofxDmx;
+			path = ../../../addons/ofxDmx;
+			sourceTree = "<group>";
+		};
+		EE984DDB1B429ADA00DECE8F /* src */ = {
+			isa = PBXGroup;
+			children = (
+				EE984DDC1B429ADA00DECE8F /* ofxDmx.cpp */,
+				EE984DDD1B429ADA00DECE8F /* ofxDmx.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		E4B69B5A0A3A1756003C02F2 /* Super Wobbler */ = {
+		E4B69B5A0A3A1756003C02F2 /* Smyths DMX */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E4B69B5F0A3A1757003C02F2 /* Build configuration list for PBXNativeTarget "Super Wobbler" */;
+			buildConfigurationList = E4B69B5F0A3A1757003C02F2 /* Build configuration list for PBXNativeTarget "Smyths DMX" */;
 			buildPhases = (
 				E4B69B580A3A1756003C02F2 /* Sources */,
 				E4B69B590A3A1756003C02F2 /* Frameworks */,
@@ -451,9 +475,9 @@
 			dependencies = (
 				E4EEB9AC138B136A00A80321 /* PBXTargetDependency */,
 			);
-			name = "Super Wobbler";
+			name = "Smyths DMX";
 			productName = myOFApp;
-			productReference = E4B69B5B0A3A1756003C02F2 /* Super WobblerDebug.app */;
+			productReference = E4B69B5B0A3A1756003C02F2 /* Smyths DMXDebug.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -464,7 +488,7 @@
 			attributes = {
 				LastUpgradeCheck = 0460;
 			};
-			buildConfigurationList = E4B69B4D0A3A1720003C02F2 /* Build configuration list for PBXProject "lexus_plates" */;
+			buildConfigurationList = E4B69B4D0A3A1720003C02F2 /* Build configuration list for PBXProject "smyths_dmx" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -485,7 +509,7 @@
 			);
 			projectRoot = "";
 			targets = (
-				E4B69B5A0A3A1756003C02F2 /* Super Wobbler */,
+				E4B69B5A0A3A1756003C02F2 /* Smyths DMX */,
 			);
 		};
 /* End PBXProject section */
@@ -512,7 +536,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cp -f ../../../libs/fmodex/lib/osx/libfmodex.dylib \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/MacOS/libfmodex.dylib\"; install_name_tool -change ./libfmodex.dylib @executable_path/libfmodex.dylib \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/MacOS/$PRODUCT_NAME\";\nmkdir -p \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/Resources/\"\ncp -f \"$ICON_FILE\" \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/Resources/\"\n";
+			shellScript = "cp -f ../../../libs/fmodex/lib/osx/libfmodex.dylib \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/MacOS/libfmodex.dylib\"; install_name_tool -change ./libfmodex.dylib @executable_path/libfmodex.dylib \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/MacOS/$PRODUCT_NAME\";\nmkdir -p \"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents/Resources/\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -548,6 +572,7 @@
 				EE3D32F01B283D38001EB016 /* maxiMFCC.cpp in Sources */,
 				EE31E33F1B25E98800243CFF /* ofxSliderGroup.cpp in Sources */,
 				EE0BCCD31B2F57D300049C86 /* PlateManager.cpp in Sources */,
+				EE984DE41B429ADA00DECE8F /* ofxDmx.cpp in Sources */,
 				EE31E33A1B25E98800243CFF /* ofxButton.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -645,10 +670,11 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_MODEL_TUNING = NONE;
-				ICON = "$(PROJECT_DIR)/chladni.icns";
-				ICON_FILE = "$(ICON_FILE_PATH)$(ICON)";
+				ICON = a.icns;
+				ICON_FILE = "";
 				ICON_FILE_PATH = "";
-				ICON_NAME_DEBUG = "$(PROJECT_DIR)/chladni.icns";
+				ICON_NAME_DEBUG = "";
+				ICON_NAME_RELEASE = "";
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = (
@@ -732,10 +758,11 @@
 				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)/../../../libs/glut/lib/osx\"";
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_MODEL_TUNING = NONE;
-				ICON = "$(PROJECT_DIR)/chladni.icns";
-				ICON_FILE = "$(ICON_FILE_PATH)$(ICON)";
+				ICON = a.icns;
+				ICON_FILE = "";
 				ICON_FILE_PATH = "";
-				ICON_NAME_DEBUG = "$(PROJECT_DIR)/chladni.icns";
+				ICON_NAME_DEBUG = "";
+				ICON_NAME_RELEASE = "";
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = (
@@ -810,7 +837,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E4B69B4D0A3A1720003C02F2 /* Build configuration list for PBXProject "lexus_plates" */ = {
+		E4B69B4D0A3A1720003C02F2 /* Build configuration list for PBXProject "smyths_dmx" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E4B69B4E0A3A1720003C02F2 /* Debug */,
@@ -819,7 +846,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		E4B69B5F0A3A1757003C02F2 /* Build configuration list for PBXNativeTarget "Super Wobbler" */ = {
+		E4B69B5F0A3A1757003C02F2 /* Build configuration list for PBXNativeTarget "Smyths DMX" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E4B69B600A3A1757003C02F2 /* Debug */,

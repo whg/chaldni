@@ -7,10 +7,37 @@ bool working = false;
 
 ofColor PianoKeys::Key::baseOnCol;
 
+#define NOCTAVES 9
+#define NCHANNELS 8
+
+#define NROWS 9
+
+
+
+double CosineInterpolate(
+                         double y1,double y2,
+                         double mu)
+{
+    double mu2;
+    
+    mu2 = (1-cos(mu*PI))/2;
+    return(y1*(1-mu2)+y2*mu2);
+}
+
+struct Note {
+    int row, pitch;
+};
+map<int, Note> currentNotes;
+
+
+ofApp::ofApp() {
+    dmxDevice = "";
+}
+
 void ofApp::setup() {
 
     ofBackground(20);
-    ofSetFrameRate(30);
+    ofSetFrameRate(60);
     
     initAssets();
     ChladniDB::setup();
@@ -19,8 +46,9 @@ void ofApp::setup() {
     midiIn.ignoreTypes(false, false, false);
     midiIn.addListener(this);
     midiIn.setVerbose(true);
-//    midiIn.listPorts();
-    midiIn.openPort("virtualMIDI Bus 1");	// by name
+    midiIn.listPorts();
+//    midiIn.openPort("virtualMIDI");	// by name
+    midiIn.openPort("Express  128b Port 1");
     
 //    panel.setup();
 //    panel.add(button.setup("something"));
@@ -34,12 +62,14 @@ void ofApp::setup() {
 //    ofSetEscapeQuitsApp(false);
 
     int pianoHeight = 50;
-    pianoKeys = PianoKeys(0, 7, 0, 0, ofGetWidth(), pianoHeight);
-    channels = Channels(5, 0, pianoHeight);
+    pianoKeys = PianoKeys(2, 7, 0, 0, ofGetWidth(), pianoHeight);
+    channels = Channels(NCHANNELS, 0, pianoHeight);
     
     plateManager = new PlateManager();
-//    plateManager->setup(5, 5);
-    plateManager->setup(5, 1);
+//    plateManager->setup(5, 1);
+    plateManager->setup(4, 4);
+    
+    
     
     pm = plateManager;
     
@@ -76,40 +106,30 @@ void ofApp::setup() {
     connecting = false;
     connectedPlate = NULL;
     
-    noteToFigureManager = new PlateManagerMidi();
-    noteToFigureManager->setup(FIGURE_GRID_X, FIGURE_GRID_Y);
+//    noteToFigureManager = new PlateManagerMidi();
+//    noteToFigureManager->setup(FIGURE_GRID_X, FIGURE_GRID_Y);
     
-    
-    
-    for (int i = 1; i <= MAX_CHANNELS; i++) {
-        playingPitches[i] = map<int,int>();
-        currentNotesPlaying[i] = 0;
+    ofSerial serial;
+    auto devices = serial.getDeviceList();
+    for (ofSerialDeviceInfo device : devices) {
+        string name = device.getDeviceName();
+        cout << name << endl;
+        if (name.find("tty.usb") != string::npos) {
+            dmxDevice = device.getDevicePath();
+        }
     }
-    
-//    soundStream.
-//    ofSoundStreamSetup(5, 0, 44100, 512, 2);
 
-    soundStream.printDeviceList();
-    soundStream.setDeviceID(1);
-    
-    soundStream.setup(this, 2, 0, 44100, 512, 2);
-    
-    
-//    plateManager->setup(10, 10);
-//    initSnake();
-//    mode = SNAKE;
-
-//    tempPanel.setup("tempPanel");
-//    tempPanel.add(spacing.set("spacing", 10, 0, 100));
-//    
-//    loadImage();
+    if (dmxDevice.find("dev") == string::npos) {
+//        dmxDevice = "/dev/tty.usbserial-EN128343";
+        dmxDevice = "/dev/tty.usbserial-EN150107";
+    }
+    dmx.connect(dmxDevice, 512);
 }
 
 void ofApp::exit() {
 
     ofSoundStreamClose();
 
-    delete noteToFigureManager;
     delete plateManager;
     
     delAssets();
@@ -117,97 +137,65 @@ void ofApp::exit() {
 
 void ofApp::resetView() {
     cam.setPosition(0, 0, 500);
+//    cam.setPosition(-1.8285985, 15.7365398, 329.100342);
+//    cam.setPosition(0, 0, 1376.83533);
+//    cam.setPosition(start);
     cam.lookAt(ofVec3f(-0, -0, -1));
 //    cam.setOrientation(ofVec3f(0, 0, 180));
+
+
+    
+//x = 0.464783788, y = -4.19150448, z = 113.592148)
+//zero orien
+//x = 0.464783788, y = -4.19150448, z = 1368.20972)
+
+
+
 }
 
 void ofApp::update() {
 
-//    ofScopedLock lock(audioMutex);
+    int offset = 0;
 
-//    ofSetWindowTitle(ofToString(ofGetFrameRate()));
-    
-//    plateManager->platePadding = spacing;
-//    plateManager->setPositions();
-    
+    plateManager->update();
+
     if (connectMode) cam.disableMouseInput();
     else cam.enableMouseInput();
- 
-    int k = 0;
-    const int SKIP = 40;
-    int n = ofGetFrameNum() / SKIP;
-    static float tt = 0;
+
+    for (auto &plate : plateManager->plates) {
+        
+        plate->update();
     
-//    if (mode == HWAVE) {
-//        if (ofGetFrameNum() % SKIP) return;
-//        for (int i = 0; i < plateManager->width; i++) {
-//            for (int j = 0; j < plateManager->height; j++) {
-//                plateManager->plates[k++]->setPatternNum((i + n) % NUM_FIGURES);
-//            }
-//        }
-//    }
-//    else if (mode == VWAVE) {
-//        if (ofGetFrameNum() % SKIP) return;
-//        for (int i = 0; i < plateManager->width; i++) {
-//            for (int j = 0; j < plateManager->height; j++) {
-//                plateManager->plates[k++]->setPatternNum((j + n) % NUM_FIGURES);
-//            }
-//        }
-//    }
-//    else if (mode == CWAVE) {
-//        float t = ofGetElapsedTimef();
-//        if (ofGetFrameNum() % SKIP) return;
-//        tt+= 0.1;
-//        t = tt;
-//        for (int i = 0; i < plateManager->width; i++) {
-//            for (int j = 0; j < plateManager->height; j++) {
-//                plateManager->plates[k++]->setPatternNum(int((sin(t + i * 0.1) + cos(t + j * 0.1)  + 2) * 0.25 * NUM_FIGURES));// % NUM_FIGURES;
-//            }
-//        }
-//    }
-//    else if (mode == RANDOM) {
-//        if (n % SKIP == 0) {
-//            for (auto &plate : plateManager->plates) {
-//                plate->setPatternNum(int(ofRandom(NUM_FIGURES)));
-//            }
-//        }
-//    }
-//    else if (mode == SNAKE) {
-//        if (ofGetFrameNum() % 5 == 0) {
-//            snake();
-//        }
-//    }
-//    else if (mode == HSWEEP) {
-//        if (ofGetFrameNum() % SKIP) return;
-//        for (int i = 0; i < plateManager->width; i++) {
-//            for (int j = 0; j < plateManager->height; j++) {
-//                plateManager->plates[k++]->setPatternNum((i + n) % NUM_FIGURES);
-//            }
-//        }
-//    }
+        dmx.setLevel(plate->id * 3 + 1 + offset, (unsigned char) (plate->dmxColour.get().r * plate->value));
+        dmx.setLevel(plate->id * 3 + 3+ offset, (unsigned char) (plate->dmxColour.get().g * plate->value));
+        dmx.setLevel(plate->id * 3 + 2+ offset, (unsigned char) (plate->dmxColour.get().b * plate->value));
+        
+    }
+
+    dmx.update();
 }
 
 
 void ofApp::draw() {
 
-    if (currentRenderType == MIDI_MANAGER) {
+    if (currentRenderType == LEARN) {
         ofBackground(155); //100, 75, 150);
 
     }
-    else ofBackground(0);
+    else ofBackground(255);
 
     if (currentRenderType == NORMAL) {
         channels.draw();
     }
-    if (currentRenderType == NORMAL || currentRenderType == MIDI_MANAGER) {
+    if (currentRenderType == NORMAL) {
         pianoKeys.draw();
     }
     
+    ofScopedLock scopedLock(midiLock);
     
     cam.begin();
     
-//    cout << cam.getLookAtDir() << endl;
-    pm->draw(currentRenderType);
+    pm->draw(NORMAL);
     
     cam.end();
     
@@ -239,7 +227,7 @@ void ofApp::draw() {
     ofSetColor(255);
     ofDrawBitmapString(ofToString(currentRenderType), 10, ofGetHeight()- 10);
     
-    tempPanel.draw();
+//    tempPanel.draw();
 //    panel.draw();
 
 //    ofTranslate(mouseX, mouseY);
@@ -250,8 +238,6 @@ void ofApp::draw() {
 void ofApp::keyPressed(int key) {
 
     KEY('r', currentRenderType = NORMAL)
-    KEY('e', currentRenderType = NOTE_SELECT)
-    KEY('m', currentRenderType = MIDI_MANAGER)
     
     KEY('f', ofToggleFullscreen())
     
@@ -263,9 +249,11 @@ void ofApp::keyPressed(int key) {
     KEY('`', PlateManager::drawSpecial = true)
     KEY('z', noSelectionMode = true)
 
-    KEY(']', awesomeMode())
-    KEY('=', setSize())
-    KEY(';', muteAll())
+    KEY('b', blankAll())
+    
+    KEY('m', currentRenderType = LEARN)
+    
+    KEY('l', needsToRedrawPanel = true);
 
     if (currentRenderType == MIDI_MANAGER) {
         pm = noteToFigureManager;
@@ -279,7 +267,7 @@ void ofApp::keyPressed(int key) {
     // this seems to make sense...
     pianoKeys.highlightKeys(false);
     
-    if (key != OF_KEY_CONTROL) showPanel = false;
+//    if (key != OF_KEY_CONTROL) showPanel = false;
 }
 
 
@@ -349,7 +337,7 @@ void ofApp::mousePressed(int x, int y, int button) {
                     }
                 }
             }
-        }   
+        }
     }
     
     if (connectMode) {
@@ -400,11 +388,11 @@ void ofApp::mouseReleased(int x, int y, int button) {
         connectedPlate = NULL;
     }
     
-    for (auto plate : noteToFigureManager->plates) {
-        for (auto note : plate->midiNotes) {
-            plate->border = false;
-        }
-    }
+//    for (auto plate : noteToFigureManager->plates) {
+//        for (auto note : plate->midiNotes) {
+//            plate->border = false;
+//        }
+//    }
 
     
     
@@ -430,28 +418,32 @@ void ofApp::createPanel(Plate *plate, bool setPos, bool forPattern) {
     
     panel.clear();
 
-    
-    if (!forPattern) {
-        panel.setName("Plate " + ofToString(plate->id));
-        panel.add(plate->audioChannel);
-        panel.add(plate->randomFigure);
-    }
-    else {
-        panel.setName("Pattern " + ofToString(plate->getPatternNum()));
-    }
-    panel.add(plate->volume);
-    
+    panel.setName("Output " + ofToString(plate->id));
+
+    panel.add(plate->playing);
+
+//    
+//    if (!forPattern) {
+//        panel.setName("Plate " + ofToString(plate->id));
+//        panel.add(plate->audioChannel);
+//        panel.add(plate->randomFigure);
+//    }
+//    else {
+//        panel.setName("Pattern " + ofToString(plate->getPatternNum()));
+//    }
+//    panel.add(plate->volume);
+//    
     map<int, shared_ptr< ofParameter<bool> > > *data;
     
     if (currentRenderType == NORMAL) {
         data = &plate->channels;
         midiNotesGroup.setName("Channels");
     }
-    else if (currentRenderType == MIDI_MANAGER) {
-        data = &plate->midiNotes;
-        midiNotesGroup.setName("MIDI notes");
-    }
-
+//    else if (currentRenderType == MIDI_MANAGER) {
+//        data = &plate->midiNotes;
+//        midiNotesGroup.setName("MIDI notes");
+//    }
+//
     midiNotes.clear();
     vector<int> toErase;
     for (auto &e : *data) {
@@ -467,7 +459,7 @@ void ofApp::createPanel(Plate *plate, bool setPos, bool forPattern) {
         }
         
     }
-    
+
     for (int pitch : toErase) {
         cout << "erasing " << pitch << endl;
         data->erase(pitch);
@@ -480,15 +472,14 @@ void ofApp::createPanel(Plate *plate, bool setPos, bool forPattern) {
     }
     
     panel.add(&midiNotesGroup);
+//
+
+    panel.add(plate->dmxColour);
     
-    
-    if (currentRenderType == NORMAL) {
-        patternFreqsGroup.clear();
-        for (int i = 0; i < NUM_FIGURES; i++) {
-            patternFreqsGroup.add(plate->patternFrequencies[i]);
-        }
-        panel.add(&patternFreqsGroup);
-    }
+    panel.add(plate->fadeIn);
+    panel.add(plate->fadeOut);
+
+
     
     
     if (setPos) {
@@ -513,22 +504,28 @@ void ofApp::valChange(bool &b) {
 
 void ofApp::windowResized(int w, int h) {
     float pianoHeight = pianoKeys.rect.getHeight();
-    pianoKeys = PianoKeys(0, 7, 0, 0, ofGetWidth(), pianoHeight);
-    channels = Channels(5, 0, pianoHeight);
+    pianoKeys = PianoKeys(2, 7, 0, 0, ofGetWidth(), pianoHeight);
+    channels = Channels(NCHANNELS, 0, pianoHeight);
     
-    noteToFigureManager->initBuffers(ofGetWidth(), ofGetHeight());
+
     plateManager->initBuffers(ofGetWidth(), ofGetHeight());
 }
 
 
 void ofApp::newMidiMessage(ofxMidiMessage& msg) {
+
+    midiLock.lock();
+    
     stringstream ss;
 //    cout << "status: " << msg.status << endl;
 //    cout << "channel: " << msg.channel << endl;
 //    cout << "pitch: " << msg.pitch << endl;
 //    cout << "velocity: " << msg.velocity << endl;
 //    cout << endl;
-//    
+
+//    printf("MIDI %d: %d, %d, %d, %d\n", msg.status, msg.channel, msg.pitch, msg.control, msg.value);
+//
+
 
 
     int index = pianoKeys.keyMap[msg.pitch];
@@ -538,259 +535,95 @@ void ofApp::newMidiMessage(ofxMidiMessage& msg) {
             pianoKeys.keys[index]->onCol = channels.keys[msg.channel-1]->onCol;
             pianoKeys.keys[index]->on = true;
             pianoKeys.keys[index]->channel = msg.channel;
-            cout << "on " << index << endl;
+//            cout << "on " << index << endl;
         }
         else if (msg.status == MIDI_NOTE_OFF) {
             
             if (msg.channel == pianoKeys.keys[index]->channel) {
                 pianoKeys.keys[index]->onCol = PianoKeys::Key::baseOnCol;
                 pianoKeys.keys[index]->on = false;
-                cout << "off " << index << endl;
+//                cout << "off " << index << endl;
             }
         }
+    
+    
 //    }
+
     
     if (currentRenderType == NORMAL) {
         
         if (msg.status == MIDI_NOTE_ON) {
-
-            currentNotesPlaying[msg.channel]++;
-            playingPitches[msg.channel][currentNotesPlaying[msg.channel]] = msg.pitch;
-                        
+            
             for (auto &plate : plateManager->plates) {
                 if (plate->channels.count(msg.channel)) {
-                
-                    int pitchToFind = playingPitches[msg.channel][plate->noteOrders[currentNotesPlaying[msg.channel]]];
-                    
-//                    cout << "currentNotesPlaying = " << currentNotesPlaying[msg.channel] << endl;
-//                    cout << "pitch = " << msg.pitch << ", noteOrder = " << plate->noteOrders[currentNotesPlaying[msg.channel]] << ", pitchTofind " << pitchToFind << endl;
-                    
-                    for (auto &figurePlate : noteToFigureManager->plates) {
-                    
-                        if (figurePlate->midiNotes.count(pitchToFind)) {
-//                            cout << "got hit at pitch " << msg.pitch << endl;
-                            plate->setPatternNum(figurePlate->id);
-                            plate->playing = true;
-                            playingPlates[msg.channel][pitchToFind][plate->id] = plate.get();
-                        }
-                    }
+                    plate->play();
+                    playingPlates[msg.channel][msg.pitch].push_back(plate.get());
+
                 }
             }
 
         }
         else if (msg.status == MIDI_NOTE_OFF) {
             
-            playingPitches[msg.channel].erase(msg.pitch);
-            
-            for (auto &plate : playingPlates[msg.channel]) {
-                if (plate.first == msg.pitch) {
-                    for (auto &playingPlates : plate.second) {
-                        playingPlates.second->playing = false;
-                    }
-                }
-            }
-            
             if (playingPlates[msg.channel].count(msg.pitch)) {
-            
-//                playingPlates[msg.channel][msg.pitch]->playing = false;
+                for (Plate *p : playingPlates[msg.channel][msg.pitch]) {
+                    p->stop();
+                }
+                
                 playingPlates[msg.channel].erase(msg.pitch);
             }
+    
             
-            currentNotesPlaying[msg.channel]--;
-        }
+         }
     }
     
+    if (msg.status == MIDI_CONTROL_CHANGE) {
+        if (currentRenderType == LEARN) {
+            Plate *p = plateManager->plates[plateManager->lastChangedNumber].get();
+            controlsToParameter[msg.control] = pair<Plate*, char>(p, plateManager->lastChangedChannel);
+            
+            currentRenderType = NORMAL;
+//            createPanel(p, false);
+            needsToRedrawPanel = true;
+            cout << "SET to " << msg.control << endl;
+        }
+        else {
+            int v = msg.value * 2;
+            if (controlsToParameter.count(msg.control)) {
+                ofParameter<ofColor> &p = controlsToParameter[msg.control].first->dmxColour;
+                switch (controlsToParameter[msg.control].second) {
+                    case 'r':
+                        p.set(ofColor(v, p->g, p->b, p->a));
+                        break;
+                    case 'g':
+                        p.set(ofColor(p->r, v, p->b, p->a));
+                        break;
+                    case 'b':
+                        p.set(ofColor(p->r, p->g, v, p->a));
+                        break;
+                    case 'a':
+                        p.set(ofColor(p->r, p->g, p->b, v));
+                        break;
+
+                }
+            }
+        }
+//        cout << msg.control << endl;
+//        cout << msg.value << endl;
+    }
+    
+    midiLock.unlock();
 }
 
 void ofApp::audioOut(float *output, int bufferSize, int nChannels) {
     
-    ofScopedLock lock(audioMutex);
-
-    vector<shared_ptr<Plate> > &plates = plateManager->plates;
-    static int baseIndex = 0;
-    
-    if (plates.size() > 20) return;
-    
-    for (int i = 0; i < bufferSize; i++) {
-        baseIndex = i * nChannels;
-        
-        for (auto &plate : plates) {
-            if (plate->audioChannel > nChannels) continue;
-            
-            output[baseIndex + plate->audioChannel] = plate->play() * noteToFigureManager->plates[plate->getPatternNum()]->volume;
-        }
-    }
 }
 
-void ofApp::muteAll() {
-    for (auto &plate : plateManager->plates) {
-        plate->playing = false;
-    }
-    playingPlates.clear();
-    playingPitches.clear();
-}
-
-
-
-void ofApp::setSize() {
-    string s = ofSystemTextBoxDialog("How big shall we go?");
-    
-    if (currentPlate) {
-        for(auto &e : currentPlate->midiNotes) {
-            e.second->removeListener(this, &ofApp::valChange);
-        }
-        currentPlate = NULL;
-    }
-    
-    int start = 0;
-    for (int i = 0; i < s.length(); i++) {
-        if (s[i] == 'x') {
-            int w = ofToInt(s.substr(0, i));
-            int h = ofToInt(s.substr(i+1, s.length()));
-
-            if (w == 0 || h == 0) {
-                ofLogError() << "bad sizes!!!";
-            }
-            else {
-                plateManager->setup(w, h);
-            }
-        }
-    }
-    
-}
-
-void ofApp::awesomeMode() {
-    string s = ofSystemTextBoxDialog("What would you like to do?");
-    
-    if (s == "") {
-        mode = NORMAL_MODE;
-        muteAll();
-    }
-    else if (s == "hwave") {
-        mode = HWAVE;
-    }
-    else if (s == "vwave") {
-        mode = VWAVE;
-    }
-    else if (s == "cwave") {
-        mode = CWAVE;
-    }
-    else if (s == "random") {
-        mode = RANDOM;
-    }
-    else if (s == "+") {
-        if (plateManager->plates.size() == 5) {
-            plateManager->plates[0]->pos.x = plateManager->plates[2]->pos.x;
-            plateManager->plates[4]->pos.x = plateManager->plates[2]->pos.x;
-            
-            plateManager->plates[0]->pos.y = plateManager->plates[2]->pos.y - plateManager->getPlateGap();
-            plateManager->plates[4]->pos.y = plateManager->plates[2]->pos.y + plateManager->getPlateGap();
-        }
-    }
-    else if (s == "-") {
-        if (plateManager->plates.size() == 5) {
-            plateManager->plates[0]->pos.x = plateManager->plates[1]->pos.x - plateManager->getPlateGap();
-            plateManager->plates[4]->pos.x = plateManager->plates[3]->pos.x + plateManager->getPlateGap();
-            
-            plateManager->plates[0]->pos.y = plateManager->plates[2]->pos.y;
-            plateManager->plates[4]->pos.y = plateManager->plates[2]->pos.y;
-        }
-    }
-    else if (s == "snake") {
-        initSnake();
-        mode = SNAKE;
-    }
-    
-}
-
-void ofApp::initSnake() {
-    snakeData.clear();
-    
-    for (int i = 0; i < 5; i++) {
-        snakeData.push_back(ofVec2f(7-i, 2));
-    }
-    
-//    for (auto &plate : plateManager->plates) {
-//        snakeData.push_back(false);
-//    }
-}
-
-void ofApp::snake() {
-    
-    int w = plateManager->width;
-    int h = plateManager->height;
-    
-    auto &plates = plateManager->plates;
-    
-    for (auto &plate : plateManager->plates) {
-        plate->setPatternNum(1); //off
-    }
-    
-    size_t s = snakeData.size();
-    ofVec2f dir = snakeData[0] - snakeData[1];
-    
-    float r = ofRandom(1);
-    float t = 0.18;
-    if (r < t) {
-        dir.rotate(90);
-    }
-    else if (r < t*2) {
-        dir.rotate(-90);
-    }
-    
-//    ofVec2f np = snakeData[0] + dir;
-    snakeData.push_front(snakeData[0] + dir);
-    
-    snakeData.pop_back();
-    
-    for (ofVec2f p : snakeData) {
-        while (p.x < 0) p.x+= w;
-        while (p.y < 0) p.y+= h;
-        
-        int k = int(p.x) % w + w * (int(p.y) % h);
-        plateManager->plates[k]->setPatternNum(9);
-        plateManager->plates[k]->setPatternNum(9);
-    }
-    
-    
-}
-
-void ofApp::loadImage() {
-    ofImage img;
-    img.load("/Users/whg/Desktop/original1.jpg");
-    
-//    plateManager->plates.clear();
-    int w = plateManager->plateWidth;
-    int g = plateManager->getPlateGap();
-    ofPixelsRef pr = img.getPixels();
-    plateManager->setup(img.width, img.height);
-    
-    int k = 0;
-    for (int i = 0; i < img.height; i++) {
-        for (int j = 0; j < img.width; j++) {
-            shared_ptr<Plate> &p = plateManager->plates[k++]; //shared_ptr<Plate>(new Plate(i*g, j*g, w));
-//            p->pos.x = 0;//i*g;
-//            p->pos.y = 1;//j*g;
-//            cout << pr.getColor(i, j).getBrightness() << endl;
-            if (pr.getColor(j, i).getBrightness() > 128) {
-                p->setPatternNum(12);
-                p->setPatternNum(12);
-//                cout << "a" << endl;
-            }
-            else {
-                p->setPatternNum(0);
-                p->setPatternNum(0);
-//                cout << "b" << endl;
-            }
-//            plateManager->plates.push_back(p);
-        }
-    }
-}
 
 void ofApp::blankAll() {
 
     for (auto &p : plateManager->plates) {
-        
+        p->setPatternNum(NUM_FIGURES);
     }
             //
 }

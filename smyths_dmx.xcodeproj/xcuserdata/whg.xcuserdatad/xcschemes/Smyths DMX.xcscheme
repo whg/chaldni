@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E4B69B5A0A3A1756003C02F2"
-               BuildableName = "Super Wobbler.app"
-               BlueprintName = "Super Wobbler"
-               ReferencedContainer = "container:lexus_plates.xcodeproj">
+               BuildableName = "Smyths DMX.app"
+               BlueprintName = "Smyths DMX"
+               ReferencedContainer = "container:smyths_dmx.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E4B69B5A0A3A1756003C02F2"
-            BuildableName = "Super Wobbler.app"
-            BlueprintName = "Super Wobbler"
-            ReferencedContainer = "container:lexus_plates.xcodeproj">
+            BuildableName = "Smyths DMX.app"
+            BlueprintName = "Smyths DMX"
+            ReferencedContainer = "container:smyths_dmx.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -52,9 +52,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E4B69B5A0A3A1756003C02F2"
-            BuildableName = "Super Wobbler.app"
-            BlueprintName = "Super Wobbler"
-            ReferencedContainer = "container:lexus_plates.xcodeproj">
+            BuildableName = "Smyths DMX.app"
+            BlueprintName = "Smyths DMX"
+            ReferencedContainer = "container:smyths_dmx.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -70,9 +70,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E4B69B5A0A3A1756003C02F2"
-            BuildableName = "Super Wobbler.app"
-            BlueprintName = "Super Wobbler"
-            ReferencedContainer = "container:lexus_plates.xcodeproj">
+            BuildableName = "Smyths DMX.app"
+            BlueprintName = "Smyths DMX"
+            ReferencedContainer = "container:smyths_dmx.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

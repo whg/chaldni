@@ -178,7 +178,8 @@ public:
         Channel(int n, float x, float y, float w, float h): PianoKeys::Key(x, y, w, h, 0) {
             name = "Channel " + ofToString(n);
             number = n;
-            onCol = ofColor::fromHsb(0.4 * 255 + n * 25, 100, 255);
+            onCol = ofColor::fromHsb(0.3 * 255 + n * 25, 100, 255);
+//            onCol = ofColor::fromHsb((n / 16.0) * 255, 120, 255);
             on = true;
         }
     };
