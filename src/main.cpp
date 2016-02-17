@@ -3,7 +3,7 @@
 
 int main(int argc, char **argv ){
 
-	ofSetupOpenGL(1000,800, OF_WINDOW);
+	ofSetupOpenGL(800, 512, OF_WINDOW);
     
     ofApp *app = new ofApp();
     

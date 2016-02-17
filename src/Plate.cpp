@@ -62,7 +62,7 @@ Plate::Plate(float x, float y, float w, float h): pos(x, y), size(w, h), listeni
         patternFrequencies.push_back(ofParameter<float>(ofToString(i), freq, freq-FREQ_ADJUST_AMOUNT, freq+FREQ_ADJUST_AMOUNT));
     }
     
-    playing.set("on", false);
+    playing.set("on", true);
     
     connecting = false;
     border = false;

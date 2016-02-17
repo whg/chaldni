@@ -48,7 +48,7 @@ void ofApp::setup() {
     midiIn.setVerbose(true);
     midiIn.listPorts();
 //    midiIn.openPort("virtualMIDI");	// by name
-    midiIn.openPort("Express  128b Port 1");
+//    midiIn.openPort("Express  128b Port 1");
     
 //    panel.setup();
 //    panel.add(button.setup("something"));
@@ -120,10 +120,11 @@ void ofApp::setup() {
     }
 
     if (dmxDevice.find("dev") == string::npos) {
-//        dmxDevice = "/dev/tty.usbserial-EN128343";
         dmxDevice = "/dev/tty.usbserial-EN150107";
     }
     dmx.connect(dmxDevice, 512);
+    
+    ofSetEscapeQuitsApp(false);
 }
 
 void ofApp::exit() {
@@ -136,7 +137,7 @@ void ofApp::exit() {
 }
 
 void ofApp::resetView() {
-    cam.setPosition(0, 0, 500);
+    cam.setPosition(0, 0, 400);
 //    cam.setPosition(-1.8285985, 15.7365398, 329.100342);
 //    cam.setPosition(0, 0, 1376.83533);
 //    cam.setPosition(start);
@@ -178,21 +179,12 @@ void ofApp::update() {
 
 void ofApp::draw() {
 
-    if (currentRenderType == LEARN) {
-        ofBackground(155); //100, 75, 150);
-
-    }
-    else ofBackground(255);
-
-    if (currentRenderType == NORMAL) {
-        channels.draw();
-    }
-    if (currentRenderType == NORMAL) {
-        pianoKeys.draw();
-    }
+    
+    ofBackground(50); //100, 75, 150);
     
     ofScopedLock scopedLock(midiLock);
     
+    cam.disableMouseInput();
     cam.begin();
     
     pm->draw(NORMAL);
@@ -243,7 +235,8 @@ void ofApp::keyPressed(int key) {
     
     KEY('v', resetView())
     
-    KEY('q', showPanel = false)
+    KEY(OF_KEY_ESC, showPanel = false)
+    
     
     KEY(OF_KEY_CONTROL, connectMode = true)
     KEY('`', PlateManager::drawSpecial = true)
@@ -418,68 +411,10 @@ void ofApp::createPanel(Plate *plate, bool setPos, bool forPattern) {
     
     panel.clear();
 
-    panel.setName("Output " + ofToString(plate->id));
+    panel.setName("Output " + ofToString(plate->id + 1));
 
     panel.add(plate->playing);
-
-//    
-//    if (!forPattern) {
-//        panel.setName("Plate " + ofToString(plate->id));
-//        panel.add(plate->audioChannel);
-//        panel.add(plate->randomFigure);
-//    }
-//    else {
-//        panel.setName("Pattern " + ofToString(plate->getPatternNum()));
-//    }
-//    panel.add(plate->volume);
-//    
-    map<int, shared_ptr< ofParameter<bool> > > *data;
-    
-    if (currentRenderType == NORMAL) {
-        data = &plate->channels;
-        midiNotesGroup.setName("Channels");
-    }
-//    else if (currentRenderType == MIDI_MANAGER) {
-//        data = &plate->midiNotes;
-//        midiNotesGroup.setName("MIDI notes");
-//    }
-//
-    midiNotes.clear();
-    vector<int> toErase;
-    for (auto &e : *data) {
-        int pitch = e.first;
-        ofParameter<bool> *param = e.second.get();
-        if (param->get()) {
-            midiNotes.push_back(shared_ptr<ofxToggle>(new ofxToggle(*param)));
-            param->addListener(this, &ofApp::valChange);
-            cout << "name = " << e.second->getName() << endl;
-        }
-        else {
-            toErase.push_back(pitch);
-        }
-        
-    }
-
-    for (int pitch : toErase) {
-        cout << "erasing " << pitch << endl;
-        data->erase(pitch);
-    }
-    
-    midiNotesGroup.clear();
-
-    for (auto &e : midiNotes) {
-        midiNotesGroup.add(e.get()->setup(e->getName(), true));
-    }
-    
-    panel.add(&midiNotesGroup);
-//
-
     panel.add(plate->dmxColour);
-    
-    panel.add(plate->fadeIn);
-    panel.add(plate->fadeOut);
-
-
     
     
     if (setPos) {

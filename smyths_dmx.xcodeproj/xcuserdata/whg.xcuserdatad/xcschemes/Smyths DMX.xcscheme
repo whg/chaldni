@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E4B69B5A0A3A1756003C02F2"
-               BuildableName = "Smyths DMX.app"
-               BlueprintName = "Smyths DMX"
+               BuildableName = "DMX Tester.app"
+               BlueprintName = "DMX Tester"
                ReferencedContainer = "container:smyths_dmx.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -33,8 +33,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E4B69B5A0A3A1756003C02F2"
-            BuildableName = "Smyths DMX.app"
-            BlueprintName = "Smyths DMX"
+            BuildableName = "DMX Tester.app"
+            BlueprintName = "DMX Tester"
             ReferencedContainer = "container:smyths_dmx.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -52,8 +52,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E4B69B5A0A3A1756003C02F2"
-            BuildableName = "Smyths DMX.app"
-            BlueprintName = "Smyths DMX"
+            BuildableName = "DMX Tester.app"
+            BlueprintName = "DMX Tester"
             ReferencedContainer = "container:smyths_dmx.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -70,8 +70,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E4B69B5A0A3A1756003C02F2"
-            BuildableName = "Smyths DMX.app"
-            BlueprintName = "Smyths DMX"
+            BuildableName = "DMX Tester.app"
+            BlueprintName = "DMX Tester"
             ReferencedContainer = "container:smyths_dmx.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

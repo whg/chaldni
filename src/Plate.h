@@ -57,11 +57,11 @@ public:
     float valueAtOff;
     
     void dmxColourChangedBefore(ofColor &c) {
-        cout << "dmx col b4" << endl;
+//        cout << "dmx col b4" << endl;
     }
     
     void dmxColourChangedAfter(ofColor &c) {
-        cout << "dmx col after" << endl;
+//        cout << "dmx col after" << endl;
     }
 
     
